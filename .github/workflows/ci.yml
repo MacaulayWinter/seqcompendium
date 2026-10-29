@@ -40,16 +40,18 @@ jobs:
   container:
     name: Container, R CMD check, tests, end to end
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build the pinned container
         run: docker build -t seqcompendium:ci .
+      - name: Every pinned version at least 14 days old (E3-M11)
+        run: docker run --rm -v "$PWD":/src:ro -w /src seqcompendium:ci Rscript inst/scripts/check_package_ages.R renv.lock 2026-10-29
       - name: R CMD check (no manual)
         run: |
           docker run --rm -v "$PWD":/src:ro seqcompendium:ci bash -c '
             cp -r /src /tmp/pkg && cd /tmp && R CMD build --no-build-vignettes pkg &&
-            _R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual seqcompendium_*.tar.gz'
+            _R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-tests seqcompendium_*.tar.gz'
       - name: Test suite (installed package)
         run: |
           docker run --rm seqcompendium:ci Rscript -e \

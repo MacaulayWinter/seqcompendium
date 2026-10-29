@@ -10,9 +10,15 @@ You give it a **bundle**: a samples × features table, your study metadata, and 
 plain-language report, and a ranked **leads table** of things worth a closer look, in
 which negative results are always shown.
 
-> **Status: milestone E1, the walking skeleton.** It runs from end to end, but asks only
-> Q1 (what is there) and Q2 (alpha diversity). Every other question appears in the leads
-> table as "not built yet", with the milestone that adds it. Not for real analyses yet.
+> **Status: milestone E3.** For count tables at a single timepoint (each timepoint and
+> block compared on its own) it asks Q0 (likely contaminants, from your negative
+> controls), Q1 (what is there), Q2 (alpha diversity), Q3 (composition), Q4 (differential
+> abundance), Q5 (differential presence) and Q7 (feature sets). Each has a fixed default
+> method, residual checks with written-down fallbacks, and alternative methods whose
+> agreement is reported. Longitudinal models, the simulation check of the default, and
+> the other data shapes come in later milestones; every question not built yet appears
+> in the leads table with the milestone that adds it. Not validated yet (that is E7): not
+> for real analyses.
 
 ## Rules it never breaks
 

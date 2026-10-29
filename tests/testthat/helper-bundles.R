@@ -46,3 +46,11 @@ stops_as_expected <- function(case) {
   e <- tryCatch({ run_compendium(b, out_dir()); NULL }, seqcompendium_stop = function(e) e)
   !is.null(e) && grepl(case$pattern, conditionMessage(e))
 }
+
+# Each fixture is run once per test session and shared (a run takes ~40 s).
+.runs <- new.env()
+run_fixture <- function(variant) {
+  if (is.null(.runs[[variant]])) { b <- toy(variant); o <- out_dir(); l <- run_compendium(b, o); .runs[[variant]] <- list(b = b, o = o, l = l) }
+  .runs[[variant]]
+}
+res_csv <- function(x, f) utils::read.csv(file.path(x$o, f), stringsAsFactors = FALSE)

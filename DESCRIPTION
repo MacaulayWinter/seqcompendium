@@ -1,6 +1,6 @@
 Package: seqcompendium
 Title: The Compendium Engine for the seq- Pipeline Family
-Version: 0.0.0.9001
+Version: 0.0.0.9003
 Authors@R: person("Macaulay", "Winter", role = c("aut", "cre"),
     email = "108404294+MacaulayWinter@users.noreply.github.com")
 Description: Takes a samples x features table, the study metadata and the
@@ -8,17 +8,38 @@ Description: Takes a samples x features table, the study metadata and the
     methods; and writes CSV results, figures that only read those CSVs, a
     plain-language report and a ranked leads table in which negative results
     are always shown. Roles and types of metadata columns come only from the
-    column guide; doubt stops the run. Milestone E1: the walking skeleton.
+    column guide; doubt stops the run.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.5)
 Imports:
+    ALDEx2,
+    ANCOMBC,
+    breakaway,
+    decontam,
+    DESeq2,
+    DHARMa,
     digest,
+    DivNet,
+    fgsea,
     ggplot2,
     iNEXT,
+    lefser,
+    limma,
+    logistf,
+    MASS,
+    MicrobiomeStat,
+    mvabund,
+    pscl,
+    S4Vectors,
     stats,
+    SummarizedExperiment,
+    TreeSummarizedExperiment,
     utils,
+    vegan,
     yaml
+Remotes:
+    adw96/DivNet@57fbdc2bd47b715965cb71be2c48e7cfa12c494c
 Suggests:
     rmarkdown,
     testthat (>= 3.0.0)

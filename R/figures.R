@@ -34,6 +34,22 @@ draw_figures <- function(out) {
       index[[length(index) + 1]] <- data.frame(figure = paste0("figures/", stem, ".pdf"), source_csv = src, caption = cap)
     }
   }
+  src3 <- "03_results/Q3_composition/ordination.csv"
+  if (file.exists(file.path(out, src3))) {
+    d <- utils::read.csv(file.path(out, src3), stringsAsFactors = FALSE)
+    for (nm in unique(d$layer)) for (p in unique(d$predictor[d$layer == nm])) {
+      x <- d[d$layer == nm & d$predictor == p, , drop = FALSE]
+      cap <- sprintf("PCoA of robust Aitchison distance, per comparison (%s) and timepoint; each panel is ordinated on its own. Source: %s (layer %s).", p, src3, nm)
+      g <- ggplot2::ggplot(x, ggplot2::aes(x = .data$axis1, y = .data$axis2, colour = .data$group)) + ggplot2::geom_point(size = 2) +
+        ggplot2::facet_wrap(~ timepoint + block + contrast, scales = "free", labeller = ggplot2::label_both) +
+        ggplot2::labs(x = "PCoA axis 1", y = "PCoA axis 2", colour = p, title = sprintf("Q3 composition: %s", nm), caption = paste(strwrap(cap, 110), collapse = "\n")) +
+        ggplot2::theme_bw(base_size = 10)
+      stem <- sprintf("Q3_pcoa_%s_%s", nm, p)
+      ggplot2::ggsave(file.path(figdir, paste0(stem, ".pdf")), g, width = 8, height = 5)
+      if (capabilities("png")) ggplot2::ggsave(file.path(figdir, paste0(stem, ".png")), g, width = 8, height = 5, dpi = 120)
+      index[[length(index) + 1]] <- data.frame(figure = paste0("figures/", stem, ".pdf"), source_csv = src3, caption = cap)
+    }
+  }
   idx <- if (length(index)) do.call(rbind, index) else data.frame(figure = character(0), source_csv = character(0), caption = character(0))
   write_csv(idx, file.path(figdir, "figures_index.csv"))
   invisible(idx)
