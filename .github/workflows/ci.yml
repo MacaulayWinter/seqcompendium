@@ -4,7 +4,8 @@
 # main: only code a pull request's CI has passed is merged (as in seq-triage).
 #
 # Jobs:
-#   1. guard:     the repository holds no data files (E1-M15)
+#   1. guard:     the repository holds no data files (E1-M15), and the
+#                 pre-registration matches its checksum (E2-M5)
 #   2. container: builds the pinned container (E1-M12), then inside it runs
 #                 R CMD check, the full test suite, and the toy bundle from
 #                 end to end with the HTML report (E1-M1 to M11, M13)
@@ -33,6 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: bash tests/check_no_research_data.sh
+      - name: Pre-registration unchanged (E2-M5)
+        run: bash tests/check_preregistration.sh
 
   container:
     name: Container, R CMD check, tests, end to end
