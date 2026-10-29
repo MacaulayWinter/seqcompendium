@@ -52,7 +52,7 @@ q3_composition <- function(units, layers) {
                       method_role = if (primary_mv) "fallback: spread differs and groups are unbalanced" else "default",
                       p = if (primary_mv) mv[["p"]] else pm[["Pr(>F)"]][1], effect = if (primary_mv) mv[["stat"]] else pm$R2[1],
                       effect_unit = if (primary_mv) "mvabund likelihood-ratio deviance" else "PERMANOVA R-squared",
-                      caveat = if (primary_mv) "location and spread cannot be separated (betadisper differs and groups are unbalanced), so mvabund is the primary" else "",
+                      caveat = if (primary_mv) sprintf("location and spread cannot be separated (betadisper differs and groups are unbalanced), so mvabund is the primary; betadisper fires by chance in about %.0f%% of comparisons whose spread is really equal, so this is a precaution, not proof that spread differs", 100 * rule("R-DIAGP")) else "",
                       n_reference = length(u$ref_samples), n_level = length(u$level_samples))
     # Agreement: Bray-Curtis on rarefied counts (C12), mvabund. Describe only: ANOSIM, SIMPER.
     set.seed(seed_for(34)); rr <- vegan::rrarefy(round(m), min(rowSums(round(m))))

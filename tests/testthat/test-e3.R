@@ -63,7 +63,9 @@ test_that("E3-M6: planted features are Q4 leads; the copy has none; agreement pe
   x <- run_fixture("planted_da"); l <- x$l
   q4l <- l[l$question == "Q4" & l$status == "lead", ]
   expect_true(all(sprintf("toyG%02d", 6:8) %in% q4l$feature))
-  expect_true(all(q4l$method_role[q4l$feature %in% sprintf("toyG%02d", 6:8)] == "default"))
+  # "By the default" includes its fallback ladder (CLAUDE.md D15): never an
+  # agreement or comparison-only method, never "fit failed".
+  expect_true(all(grepl("^(default|fallback rung [12])$", q4l$method_role[q4l$feature %in% sprintf("toyG%02d", 6:8)])))
   expect_false(any(run_fixture("copy_null")$l$question == "Q4" & run_fixture("copy_null")$l$status == "lead"))
   ag <- res_csv(x, "04_agreement/Q4.csv")
   q4 <- res_csv(x, "03_results/Q4_differential/results.csv")
@@ -98,6 +100,8 @@ test_that("E3-M9: zero-inflated features are flagged and refitted; over R-DIAG m
   q4 <- res_csv(x, "03_results/Q4_differential/results.csv")
   moved <- q4[q4$feature %in% ch$feature[ch$failed] & paste(q4$timepoint, q4$feature) %in% paste(ch$timepoint, ch$feature)[ch$failed], ]
   expect_true(all(moved$rung >= 1 & grepl("rung", moved$caveat)))
+  # The user asked that every move says it may be chance (CLAUDE.md D16).
+  expect_true(all(grepl("may have moved by chance", moved$caveat)))
   y <- res_csv(run_fixture("zeroinfl_many"), "03_results/Q4_differential/results.csv")
   w <- y[y$share_failed_checks > 0.2, ]
   expect_true(nrow(w) > 0 && all(w$whole_question_moved & w$rung >= 1 & grepl("whole question moved", w$caveat)))
