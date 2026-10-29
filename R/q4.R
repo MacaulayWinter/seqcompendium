@@ -7,7 +7,8 @@
 #   count models  rung 1 zero-inflated NB (R02), rung 2 permutation test on CLR (K04)
 #   LinDA         rung 1 Welch t-test on CLR,   rung 2 Wilcoxon on CLR
 # A feature that fails its checks moves down a rung, with a caveat; if more
-# than R-DIAG of features fail, the whole question moves a rung (design C14).
+# features fail than chance would give (binomial test, R-EXCESS; CLAUDE.md D17),
+# the whole question moves a rung (design C14).
 # Agreement set and describe-only methods run alongside, every time.
 
 fit_deseq2 <- function(ud, feats) {
@@ -124,19 +125,22 @@ q4_unit <- function(u, layer, default_id) {
   count_model <- default_id == "D01"
   chk <- do.call(rbind, lapply(seq_along(feats), function(k) if (count_model) check_nb(ud, feats[k], k) else check_lm_clr(ud, feats[k])))
   share <- mean(chk$failed)
-  whole <- share > rule("R-DIAG")
   # How many failures chance alone would give (the user asked for this to be
   # stated, CLAUDE.md D16). DHARMa runs 3 tests per feature at R-DIAGP, so a
   # feature that fits well still fails at least one with probability about
   # 1 - (1 - R-DIAGP)^3 (14% at 0.05; the tests are not fully independent, so
   # this is approximate). LinDA's checks use fixed thresholds, not p-values,
   # so no chance rate can be given for them.
-  chance <- if (count_model) 1 - (1 - rule("R-DIAGP"))^3 else NA_real_
+  chance <- if (count_model) 1 - (1 - rule("R-DIAGP"))^3 else linda_chance_rate(length(u$ref_samples), length(u$level_samples))
+  # The whole comparison moves only when clearly more features failed than
+  # chance would give (one-sided binomial test, R-EXCESS; CLAUDE.md D17).
+  excess_p <- stats::binom.test(sum(chk$failed), length(feats), chance, alternative = "greater")$p.value
+  whole <- excess_p < rule("R-EXCESS")
   chance_note <- if (count_model) sprintf(
     "each feature gets 3 residual checks at p < %s, so about %.0f%% of features that fit well fail at least one by chance; here %d of %d features failed (about %.1f expected by chance), so this feature may have moved by chance. Its result is still valid: it comes from a method that assumes less",
     rule("R-DIAGP"), 100 * chance, sum(chk$failed), length(feats), chance * length(feats))
-  else sprintf("the checks use fixed thresholds (R-SKEW, R-VARRATIO), which features that fit well can cross by chance; here %d of %d features failed. Its result is still valid: it comes from a method that assumes less",
-               sum(chk$failed), length(feats))
+  else sprintf("the checks use fixed thresholds (R-SKEW, R-VARRATIO), which about %.0f%% of features that fit well cross by chance at these group sizes; here %d of %d features failed (about %.1f expected by chance), so this feature may have moved by chance. Its result is still valid: it comes from a method that assumes less",
+               100 * chance, sum(chk$failed), length(feats), chance * length(feats))
   rung1 <- if (count_model) function(f) fit_zinb(ud, f) else function(f) fit_welch_clr(ud, f)
   rung2 <- if (count_model) function(f) fit_perm_clr(ud, f) else function(f) { r <- fit_wilcoxon_clr(ud, f); r$effect_unit <- "difference in mean CLR (Wilcoxon)"; r }
   rung1_name <- if (count_model) "zero-inflated negative binomial (R02)" else "Welch t-test on CLR"
@@ -146,7 +150,7 @@ q4_unit <- function(u, layer, default_id) {
     r <- base[base$feature == f, , drop = FALSE]; rung <- 0L; cav <- character(0)
     if (whole || chk$failed[chk$feature == f] || !is.finite(r$p)) {
       r1 <- tryCatch(rung1(f), error = function(e) NULL); rung <- 1L
-      cav <- c(cav, if (whole) sprintf("more than %.0f%% of features failed their residual checks, so the whole question moved to rung 1 (%s)", 100 * rule("R-DIAG"), rung1_name)
+      cav <- c(cav, if (whole) sprintf("%d of %d features failed their residual checks, more than chance would give (about %.1f expected; binomial p = %.3g < R-EXCESS), so the whole question moved to rung 1 (%s)", sum(chk$failed), length(feats), chance * length(feats), excess_p, rung1_name)
                     else sprintf("residual checks failed (%s), so refitted at rung 1 (%s)", chk$why[chk$feature == f], rung1_name), chance_note)
       if (is.null(r1) || !is.finite(r1$p)) { r1 <- tryCatch(rung2(f), error = function(e) NULL); rung <- 2L
         cav <- c(cav, sprintf("rung 1 did not fit, so rung 2 (%s)", rung2_name)) }
@@ -167,7 +171,7 @@ q4_unit <- function(u, layer, default_id) {
   res$status <- ifelse(!ok, "not_testable", ifelse(res$q <= rule("R-FDR"), "lead", "no_evidence"))
   res$method_id <- ifelse(res$rung == 0, default_id, ifelse(res$rung == 1, if (count_model) "R02" else "K01", if (count_model) "K04" else "D17"))
   res$n_reference <- length(u$ref_samples); res$n_level <- length(u$level_samples)
-  res$share_expected_by_chance <- chance
+  res$share_expected_by_chance <- chance; res$excess_failures_p <- excess_p
   list(results = res, checks = chk, share_failed = share, whole = whole, feats = feats, ud = ud)
 }
 
@@ -218,4 +222,16 @@ q4_abundance <- function(units, layers, choices) {
   bind <- function(l) { l <- Filter(Negate(is.null), l); if (length(l)) do.call(rbind, l) else NULL }
   list(results = bind(res), checks = bind(chk), agreement = bind(agr), describe = bind(desc), skipped = bind(notes),
        for_q7 = Filter(Negate(is.null), stats_for_q7))
+}
+
+# How often LinDA's fixed residual cut-offs (R-SKEW, R-VARRATIO) fail a
+# well-fitting feature by chance at these group sizes: normal residuals,
+# 2,000 seeded draws (CLAUDE.md D17).
+linda_chance_rate <- function(n1, n2) {
+  set.seed(seed_for(45))
+  mean(replicate(2000, {
+    a <- stats::rnorm(n1); b <- stats::rnorm(n2); r <- c(a - mean(a), b - mean(b))
+    sk <- mean(r^3) / stats::sd(r)^3; v <- c(stats::var(a), stats::var(b))
+    abs(sk) > rule("R-SKEW") || max(v) / min(v) > rule("R-VARRATIO")
+  }))
 }

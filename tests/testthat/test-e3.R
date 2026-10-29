@@ -103,8 +103,10 @@ test_that("E3-M9: zero-inflated features are flagged and refitted; over R-DIAG m
   # The user asked that every move says it may be chance (CLAUDE.md D16).
   expect_true(all(grepl("may have moved by chance", moved$caveat)))
   y <- res_csv(run_fixture("zeroinfl_many"), "03_results/Q4_differential/results.csv")
-  w <- y[y$share_failed_checks > 0.2, ]
+  # Since D17 the whole comparison moves when failures clearly exceed chance.
+  w <- y[y$excess_failures_p < 0.05, ]
   expect_true(nrow(w) > 0 && all(w$whole_question_moved & w$rung >= 1 & grepl("whole question moved", w$caveat)))
+  expect_true(all(!y$whole_question_moved[y$excess_failures_p >= 0.05]))
   expect_true(all(y$status != "not_testable" | grepl("listed, not dropped", y$caveat)))
 })
 
