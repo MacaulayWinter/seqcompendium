@@ -1,0 +1,55 @@
+# seqcompendium CI
+#
+# Runs on every pull request, and by hand (workflow_dispatch). Not on push to
+# main: only code a pull request's CI has passed is merged (as in seq-triage).
+#
+# Jobs:
+#   1. guard:     the repository holds no data files (E1-M15)
+#   2. container: builds the pinned container (E1-M12), then inside it runs
+#                 R CMD check, the full test suite, and the toy bundle from
+#                 end to end with the HTML report (E1-M1 to M11, M13)
+#
+# Every action is pinned to a full commit SHA, not a tag: a tag can be moved
+# to point at different code, a SHA cannot. The tag is noted alongside.
+
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: No data files in the repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash tests/check_no_research_data.sh
+
+  container:
+    name: Container, R CMD check, tests, end to end
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the pinned container
+        run: docker build -t seqcompendium:ci .
+      - name: R CMD check (no manual)
+        run: |
+          docker run --rm -v "$PWD":/src:ro seqcompendium:ci bash -c '
+            cp -r /src /tmp/pkg && cd /tmp && R CMD build --no-build-vignettes pkg &&
+            _R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual seqcompendium_*.tar.gz'
+      - name: Test suite (installed package)
+        run: |
+          docker run --rm seqcompendium:ci Rscript -e \
+            'testthat::test_dir("/opt/seqcompendium/tests/testthat", package = "seqcompendium", load_package = "installed", reporter = "summary", stop_on_failure = TRUE)'
+      - name: Toy bundle end to end, with the HTML report
+        run: docker run --rm seqcompendium:ci Rscript /opt/seqcompendium/inst/scripts/check_toy_end_to_end.R /tmp/e2e
