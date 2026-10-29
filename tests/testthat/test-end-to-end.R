@@ -71,9 +71,8 @@ test_that("E1-M8: the leads table has every §8.1 column, every question, and BH
 
 test_that("E1-M9: the report has its sections in order and Q2's five parts", {
   md <- readLines(f("report", "compendium_report.md"))
-  heads <- c("## 1. Input check", "## 2. Controls", "## 3. Design as read", "## 4. Shape profile", "## 5. Q1.", "## 6. Q2.",
-             "## 7. What was not found", "## 8. Leads")
-  pos <- vapply(heads, function(h) which(startsWith(md, h))[1], 1L)
+  heads <- c("Input check", "Controls", "Design as read", "Shape profile", "Q1.", "Q2.", "What was not found", "Leads")
+  pos <- vapply(heads, function(h) grep(sprintf("^## [0-9]+\\. %s", gsub(".", "\\.", h, fixed = TRUE)), md)[1], 1L)
   expect_false(anyNA(pos)); expect_true(all(diff(pos) > 0))
   for (part in c("**What was asked.**", "**Why this method.**", "**What the checks showed.**", "**Limitations.**", "**Did the alternatives agree.**"))
     expect_true(any(startsWith(md, part)), info = part)

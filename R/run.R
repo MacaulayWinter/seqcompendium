@@ -60,13 +60,42 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
                        package = c("iNEXT", "stats"), version = c(as.character(utils::packageVersion("iNEXT")), as.character(getRversion())),
                        seed = "none needed (no random step)"), file.path(qdir, "model_info.csv"))
 
-  leads <- build_leads(q2, lc$layers, des)
+  # Method choice: the catalogue filter and the defaults (design 3.2, 5.2).
+  considered <- do.call(rbind, lapply(names(lc$layers), function(nm) filter_catalogue(nm, lc$layers[[nm]], des)))
+  choices <- do.call(rbind, lapply(names(lc$layers), function(nm) choose_methods(nm, lc$layers[[nm]], considered[considered$layer == nm, ])))
+  write_csv(considered, file.path(out, "02_method_choice", "methods_considered.csv"))
+  write_csv(choices, file.path(out, "02_method_choice", "choices.csv"))
+
+  units <- contrast_units(lc$layers, des, cells)
+  q0 <- q0_contaminants(lc$layers, des)
+  if (!is.null(q0)) write_csv(q0, file.path(out, "03_results", "Q0_contaminants", "results.csv"))
+  a2 <- q2_agreement(units, lc$layers)
+  if (!is.null(q2$results)) q2$results <- agreement_labels(q2$results, a2, c("layer", "predictor", "contrast", "timepoint", "block", "q_order"))
+  if (!is.null(q2$results)) write_csv(q2$results, file.path(qdir, "results.csv"))
+  q3 <- q3_composition(units, lc$layers)
+  if (!is.null(q3$results)) q3$results <- agreement_labels(q3$results, q3$agreement[q3$agreement$role == "agreement", ],
+                                                           c("layer", "predictor", "contrast", "timepoint", "block"), directional = FALSE)
+  q4 <- q4_abundance(units, lc$layers, choices)
+  if (!is.null(q4$results)) q4$results <- agreement_labels(q4$results, q4$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
+  q5 <- q5_presence(units, lc$layers)
+  if (!is.null(q5$results)) q5$results <- agreement_labels(q5$results, q5$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
+  q7 <- q7_sets(q4$for_q7, lc$layers)
+  if (!is.null(q7$results)) q7$results <- agreement_labels(q7$results, q7$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "set_column", "feature"))
+  w <- function(x, ...) if (!is.null(x)) write_csv(x, file.path(out, ...))
+  w(q3$results, "03_results", "Q3_composition", "results.csv"); w(q3$ordination, "03_results", "Q3_composition", "ordination.csv")
+  w(q4$results, "03_results", "Q4_differential", "results.csv"); w(q4$checks, "03_results", "Q4_differential", "diagnostics.csv")
+  w(q5$results, "03_results", "Q5_presence", "results.csv"); w(q7$results, "03_results", "Q7_sets", "results.csv")
+  w(a2, "04_agreement", "Q2.csv"); w(q3$agreement, "04_agreement", "Q3.csv"); w(q4$agreement, "04_agreement", "Q4.csv")
+  w(q4$describe, "04_agreement", "Q4_describe_only.csv"); w(q5$agreement, "04_agreement", "Q5.csv"); w(q7$agreement, "04_agreement", "Q7.csv")
+
+  res <- list(q0 = q0, q2 = q2, q3 = q3, q4 = q4, q5 = q5, q7 = q7)
+  leads <- build_leads(res, lc$layers, des)
   write_csv(leads, file.path(out, "05_leads", "leads.csv"))
 
   figures <- draw_figures(out)
   write_provenance(out, b)
   write_readme(out)
-  write_report(out, list(des = des, leads = leads, q2 = q2, q1 = q1, profile = profile, controls = controls, check = check,
+  write_report(out, list(des = des, leads = leads, q2 = q2, q1 = q1, res = res, choices = choices, considered = considered, profile = profile, controls = controls, check = check,
                          info = gc$info, figures = figures, bundle_path = normalizePath(bundle)))
   invisible(leads)
 }
@@ -84,7 +113,7 @@ write_provenance <- function(out, b) {
 }
 
 write_readme <- function(out) {
-  writeLines(c("This folder is a compendium written by seqcompendium (milestone E1).",
+  writeLines(c("This folder is a compendium written by seqcompendium.",
                "",
                "report/          the report: start here (compendium_report.html, or .md)",
                "00_input_check/  every check on the input, the column guide as read, the design in words, every control sample",
@@ -94,5 +123,6 @@ write_readme <- function(out) {
                "figures/         figures drawn only from the CSVs; figures_index.csv names each one's source",
                "provenance/      versions, rules, input checksums",
                "",
-               "02_method_choice/ and 04_agreement/ arrive at milestone E3."), file.path(out, "README.txt"))
+               "02_method_choice/ every catalogue method, eligible or not and why; the method chosen per question",
+               "04_agreement/    the alternative and describe-only methods' results, per feature"), file.path(out, "README.txt"))
 }

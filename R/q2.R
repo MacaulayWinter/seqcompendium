@@ -4,9 +4,9 @@
 # A02), then a Welch test of each group against the reference level, within
 # each timepoint and block (never pooled). Benjamini-Hochberg within each
 # contrast x timepoint x block, over the three orders q.
-# Not built yet in E1 (stated in every result): the agreement set (rarefied
-# plug-in Shannon, DivNet), the fallback ladder, leave-one-out, adjustment for
-# batch or a second predictor, paired or longitudinal models (E3, E5, E6).
+# The agreement set (rarefied plug-in Hill numbers, DivNet) is in
+# questions.R. Not built yet (stated in every result): leave-one-out (E6),
+# adjustment for batch or a second predictor, paired and longitudinal models (E5).
 
 hill_at_equal_coverage <- function(m) {
   keep <- rowSums(m) > 0
@@ -52,7 +52,8 @@ q2_alpha <- function(layers, des, cells) {
             r <- data.frame(layer = nm, predictor = p, contrast = sprintf("%s vs %s", lvl, ref), timepoint = tp[1], block = tp[2],
                             q_order = qq, n_reference = length(a), n_level = length(b),
                             mean_reference = if (length(a)) mean(a) else NA, mean_level = if (length(b)) mean(b) else NA,
-                            effect = NA_real_, ci_low = NA_real_, ci_high = NA_real_, p = NA_real_, status = NA_character_, reason = NA_character_)
+                            effect = NA_real_, ci_low = NA_real_, ci_high = NA_real_, p = NA_real_, status = NA_character_, reason = NA_character_,
+                            method_id = "A02", method_role = "default", caveat = "")
             if (paired_cell) {
               r$status <- "not_testable"; r$reason <- "a subject has more than one sample in this timepoint and block; the paired model is built at milestone E5"
             } else if (length(a) < rule("R-MINGRP") || length(b) < rule("R-MINGRP")) {
@@ -66,13 +67,23 @@ q2_alpha <- function(layers, des, cells) {
               } else { r$p <- tt$p.value; r$ci_low <- tt$conf.int[1]; r$ci_high <- tt$conf.int[2] }
             }
             rows[[length(rows) + 1]] <- r
-            # Residual checks: recorded in E1, not yet acted on (fallbacks: E3).
+            # Residual checks (design section 6): Welch's test already allows
+            # unequal spread; badly skewed residuals move to the rank-based
+            # Wilcoxon test (K02), with a caveat.
             res_all <- c(a - mean(a), b - mean(b))
             sk <- if (length(res_all) > 2 && stats::sd(res_all) > 0) mean(res_all^3) / stats::sd(res_all)^3 else NA
+            k <- length(rows)
+            if (is.finite(sk) && abs(sk) > rule("R-SKEW") && is.finite(rows[[k]]$p)) {
+              rows[[k]]$p <- suppressWarnings(stats::wilcox.test(b, a)$p.value)
+              rows[[k]]$ci_low <- NA; rows[[k]]$ci_high <- NA
+              rows[[k]]$method_id <- "K02"; rows[[k]]$method_role <- "fallback rung 1"
+              rows[[k]]$caveat <- sprintf("residual skewness %.2f exceeds R-SKEW (%s), so the Welch test was replaced by the Wilcoxon rank-sum test", sk, rule("R-SKEW"))
+            }
             diag[[length(diag) + 1]] <- data.frame(layer = nm, predictor = p, contrast = r$contrast, timepoint = tp[1], block = tp[2], q_order = qq,
                                                    residual_skewness = sk,
                                                    sd_ratio = if (length(a) > 1 && length(b) > 1 && min(stats::sd(a), stats::sd(b)) > 0) max(stats::sd(a), stats::sd(b)) / min(stats::sd(a), stats::sd(b)) else NA,
-                                                   action = "recorded only; the fallback ladder is built at milestone E3")
+                                                   failed = is.finite(sk) && abs(sk) > rule("R-SKEW"),
+                                                   action = if (is.finite(sk) && abs(sk) > rule("R-SKEW")) "moved to the Wilcoxon rank-sum test" else "none needed")
           }
           rows <- do.call(rbind, rows)
           tested <- !is.na(rows$p)
