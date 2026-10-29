@@ -14,8 +14,9 @@
 #'   reads concentrated in 3 features: far lower diversity, shifted
 #'   composition); "planted_da" (3 features, toyG06-08, at 8 times the mean in
 #'   treated samples, forming the set "planted"); "spread" (9 control and 3
-#'   treated subjects, treated far more variable); "zeroinfl_few" and
-#'   "zeroinfl_many" (3 or 9 features with 60 percent structural zeros);
+#'   treated subjects, treated far more variable); "zeroinfl_few" (3 features
+#'   with 60 percent structural zeros) and "zeroinfl_many" (15 features with
+#'   70 percent);
 #'   "presence" (toyG15 present in every treated sample, absent from every
 #'   control); "no_denominator" (no denominators file); "proportions" (the
 #'   layer as proportions, unit proportion).
@@ -43,8 +44,10 @@ make_toy_bundle <- function(dir, variant = c("main", "no_controls", "copy_null",
   counts <- t(vapply(seq_len(nrow(md)), function(j) stats::rnbinom(n_f, mu = mu * depth[j], size = size[j]), numeric(n_f)))
   if (variant == "planted_da") counts[treated, 6:8] <- t(vapply(which(treated), function(j) stats::rnbinom(3, mu = 8 * mu[6:8] * depth[j], size = 2), numeric(3)))
   if (variant %in% c("zeroinfl_few", "zeroinfl_many")) {
-    zf <- if (variant == "zeroinfl_few") 9:11 else 9:17
-    for (k in zf) counts[stats::runif(nrow(md)) < 0.6, k] <- 0
+    # few: 3 features (a misfit chance could explain); many: 15 of 30 with more
+    # zeros (clearly more failures than chance; CLAUDE.md D17, D18).
+    zf <- if (variant == "zeroinfl_few") 9:11 else 9:23
+    for (k in zf) counts[stats::runif(nrow(md)) < (if (variant == "zeroinfl_few") 0.6 else 0.7), k] <- 0
   }
   if (variant == "presence") { counts[!treated, 15] <- 0; counts[treated, 15] <- stats::rnbinom(sum(treated), mu = 50, size = 5) + 1 }
   if (variant == "copy_null") {

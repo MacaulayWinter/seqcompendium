@@ -20,8 +20,9 @@ sample's counts, so the groups cannot differ); "planted" (treated samples'
 reads concentrated in 3 features: far lower diversity, shifted
 composition); "planted_da" (3 features, toyG06-08, at 8 times the mean in
 treated samples, forming the set "planted"); "spread" (9 control and 3
-treated subjects, treated far more variable); "zeroinfl_few" and
-"zeroinfl_many" (3 or 9 features with 60 percent structural zeros);
+treated subjects, treated far more variable); "zeroinfl_few" (3 features
+with 60 percent structural zeros) and "zeroinfl_many" (15 features with
+70 percent);
 "presence" (toyG15 present in every treated sample, absent from every
 control); "no_denominator" (no denominators file); "proportions" (the
 layer as proportions, unit proportion).
