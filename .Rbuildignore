@@ -5,3 +5,5 @@
 ^README\.md$
 ^tests/check_no_research_data\.sh$
 ^LICENSE\.md$
+^validation$
+^tests/check_preregistration\.sh$
