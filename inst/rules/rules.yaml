@@ -1,0 +1,17 @@
+# The rules file (design §4). Every threshold the engine uses lives here, with
+# its reason and source. The values are the C6 starting values the user
+# approved on 2026-10-29. Changing one is a new engine version, logged in
+# CLAUDE.md. These rules decide whether a METHOD suits the data; they never
+# decide what a metadata column is (that comes only from the column guide).
+rules_version: "2026-10-29.1"
+rules:
+  R-PREV:   {value: 0.10, reason: "Feature kept for per-feature tests if present in at least this share of samples in at least one group", source: "rule of thumb, unverified"}
+  R-MINGRP: {value: 3,    reason: "Smallest group size for any test; below it, description and effect sizes only", source: "rule of thumb, unverified"}
+  R-MINSIM: {value: 10,   reason: "Smallest reference group to fit the simulator (override rule, E4)", source: "rule of thumb, unverified (catalogue D20)"}
+  R-GEE:    {value: 40,   reason: "Fewest subjects for GEE sandwich errors to be trusted", source: "rule of thumb, unverified"}
+  R-RE:     {value: 5,    reason: "Fewest levels for a random effect to be estimated", source: "rule of thumb, unverified (catalogue D18)"}
+  R-FDR:    {value: 0.10, reason: "FDR level for a lead (exploratory survey, C18)", source: "user decision C18"}
+  R-CAL:    {value: 2,    reason: "A method fails calibration if its simulated FDR exceeds this multiple of R-FDR", source: "rule of thumb, unverified"}
+  R-DIAG:   {value: 0.20, reason: "Share of features failing residual checks before the whole question moves to the fallback", source: "rule of thumb, unverified"}
+  R-AGREE:  {value: 0.667, reason: "Agreement: at least this share of the agreement set give the same direction and a call", source: "rule of thumb, unverified"}
+  R-SIMREP: {value: 100,  reason: "Simulation repeats per candidate method", source: "rule of thumb, unverified"}

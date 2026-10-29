@@ -1,0 +1,7 @@
+^\.github$
+^Dockerfile$
+^\.dockerignore$
+^CLAUDE\.md$
+^README\.md$
+^tests/check_no_research_data\.sh$
+^LICENSE\.md$

@@ -1,0 +1,26 @@
+Package: seqcompendium
+Title: The Compendium Engine for the seq- Pipeline Family
+Version: 0.0.0.9001
+Authors@R: person("Macaulay", "Winter", role = c("aut", "cre"),
+    email = "108404294+MacaulayWinter@users.noreply.github.com")
+Description: Takes a samples x features table, the study metadata and the
+    user's column guide; profiles the data's shape; fits pre-declared default
+    methods; and writes CSV results, figures that only read those CSVs, a
+    plain-language report and a ranked leads table in which negative results
+    are always shown. Roles and types of metadata columns come only from the
+    column guide; doubt stops the run. Milestone E1: the walking skeleton.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.5)
+Imports:
+    digest,
+    ggplot2,
+    iNEXT,
+    stats,
+    utils,
+    yaml
+Suggests:
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+RoxygenNote: 7.3.3

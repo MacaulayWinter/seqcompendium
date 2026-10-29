@@ -1,0 +1,6 @@
+.git
+.github
+*.Rcheck
+out
+compendium
+scratch
