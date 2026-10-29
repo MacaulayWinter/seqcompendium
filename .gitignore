@@ -1,0 +1,10 @@
+# Never commit research data, run outputs or local R state.
+.Rhistory
+.RData
+.Rproj.user/
+*.Rcheck/
+seqcompendium_*.tar.gz
+/out/
+/compendium/
+/scratch/
+.DS_Store
