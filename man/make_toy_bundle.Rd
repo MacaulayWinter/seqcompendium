@@ -6,7 +6,8 @@
 \usage{
 make_toy_bundle(
   dir,
-  variant = c("main", "no_controls", "copy_null", "planted"),
+  variant = c("main", "no_controls", "copy_null", "planted", "planted_da", "spread",
+    "zeroinfl_few", "zeroinfl_many", "presence", "no_denominator", "proportions"),
   seed = 20261029L
 )
 }
@@ -16,7 +17,16 @@ make_toy_bundle(
 \item{variant}{"main"; "no_controls" (no control samples, no sample_control
 column); "copy_null" (each treated sample is an exact copy of a control
 sample's counts, so the groups cannot differ); "planted" (treated samples'
-reads concentrated in 3 features, so their diversity is far lower).}
+reads concentrated in 3 features: far lower diversity, shifted
+composition); "planted_da" (3 features, toyG06-08, at 8 times the mean in
+treated samples, forming the set "planted"); "spread" (9 control and 3
+treated subjects, treated far more variable); "zeroinfl_few" and
+"zeroinfl_many" (3 or 9 features with 60 percent structural zeros);
+"presence" (toyG15 present in every treated sample, absent from every
+control); "no_denominator" (no denominators file); "proportions" (the
+layer as proportions, unit proportion).
+In every variant with controls, toyG26-30 are contaminants: common in the
+blanks, rare in study samples.}
 
 \item{seed}{random seed.}
 }
