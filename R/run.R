@@ -75,7 +75,22 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
   q3 <- q3_composition(units, lc$layers)
   if (!is.null(q3$results)) q3$results <- agreement_labels(q3$results, q3$agreement[q3$agreement$role == "agreement", ],
                                                            c("layer", "predictor", "contrast", "timepoint", "block"), directional = FALSE)
-  q4 <- q4_abundance(units, lc$layers, choices)
+  # The override rule (design 5.3): checks each Q4 default on simulated data
+  # from the reference samples, and switches only if it fails (C13).
+  ov <- run_override(units, lc$layers, choices, considered, des, bundle)
+  w0 <- function(x, ...) if (!is.null(x)) write_csv(x, file.path(out, ...))
+  w0(ov$decisions, "02_method_choice", "override.csv"); w0(ov$calibration, "02_method_choice", "simulation", "calibration.csv")
+  w0(ov$per_rep, "02_method_choice", "simulation", "per_dataset.csv")
+  w0(ov$mock$recovery, "00_input_check", "mock_recovery.csv"); w0(ov$mock$test, "02_method_choice", "simulation", "mock_test.csv")
+  if (!is.null(ov$decisions)) {
+    ch4 <- choices$question == "Q4"
+    choices$override[ch4] <- vapply(choices$layer[ch4], function(nm) {
+      d <- ov$decisions[ov$decisions$layer == nm, ]
+      paste(unique(sprintf("%s: %s", paste(d$contrast, d$timepoint, d$block), ifelse(d$decision == "switched", sprintf("switched to %s", d$final_id), d$decision))), collapse = "; ")
+    }, "")
+    write_csv(choices, file.path(out, "02_method_choice", "choices.csv"))
+  }
+  q4 <- q4_abundance(units, lc$layers, choices, ov$decisions)
   if (!is.null(q4$results)) q4$results <- agreement_labels(q4$results, q4$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
   q5 <- q5_presence(units, lc$layers)
   if (!is.null(q5$results)) q5$results <- agreement_labels(q5$results, q5$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
@@ -88,7 +103,7 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
   w(a2, "04_agreement", "Q2.csv"); w(q3$agreement, "04_agreement", "Q3.csv"); w(q4$agreement, "04_agreement", "Q4.csv")
   w(q4$describe, "04_agreement", "Q4_describe_only.csv"); w(q5$agreement, "04_agreement", "Q5.csv"); w(q7$agreement, "04_agreement", "Q7.csv")
 
-  res <- list(q0 = q0, q2 = q2, q3 = q3, q4 = q4, q5 = q5, q7 = q7)
+  res <- list(q0 = q0, q2 = q2, q3 = q3, q4 = q4, q5 = q5, q7 = q7, override = ov)
   leads <- build_leads(res, lc$layers, des)
   write_csv(leads, file.path(out, "05_leads", "leads.csv"))
 

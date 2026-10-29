@@ -5,7 +5,7 @@
 # only removes methods, by hard requirements in a fixed order; it never picks
 # one. Picking is the default table (design section 5.2), in choose_methods().
 
-BUILT <- c("E1", "E2", "E3")   # milestones whose methods this engine version runs
+BUILT <- c("E1", "E2", "E3", "E4")   # milestones whose methods this engine version runs
 
 catalogue <- function() utils::read.csv(system.file("catalogue", "methods.csv", package = "seqcompendium"), colClasses = "character",
                                         check.names = FALSE, na.strings = character(0))
@@ -62,7 +62,7 @@ choose_methods <- function(layer_name, layer, considered) {
     c("Q7", "E02", "pre-ranked fgsea on the Q4 statistic", "the manifest declares a set column"))
   do.call(rbind, lapply(rows, function(r) data.frame(layer = layer_name, question = r[1], default_id = r[2], default_method = r[3],
                                                       rests_on = r[4], default_eligible = if (ok(r[2])) "yes" else "no",
-                                                      override = "not run (the override rule is built at milestone E4)",
+                                                      override = if (r[1] == "Q4") "see 02_method_choice/override.csv" else "not applicable (the override rule is for Q4)",
                                                       final_id = if (ok(r[2])) r[2] else NA_character_,
                                                       rule = "design section 5.2, S1 snapshot table")))
 }

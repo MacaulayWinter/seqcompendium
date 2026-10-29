@@ -123,6 +123,19 @@ q4_unit <- function(u, layer, default_id) {
   base <- tryCatch(FITS[[default_id]](ud, feats), error = function(e) NULL)
   if (is.null(base)) return(list(skip = sprintf("the default method (%s) failed to fit", default_id)))
   count_model <- default_id == "D01"
+  # Residual checks and a fallback ladder exist for DESeq2 (count model) and
+  # LinDA (linear model) only (design section 6). A method chosen by the
+  # override rule (ANCOM-BC2, ALDEx2, Wilcoxon) is used as it is.
+  if (!default_id %in% c("D01", "D09")) {
+    res <- base; res$rung <- 0L; res$method_role <- "override"; res$caveat <- "chosen by the override rule; the design defines no residual check for this method"
+    ok <- is.finite(res$p)
+    res$ci_low <- res$effect - 1.96 * res$se; res$ci_high <- res$effect + 1.96 * res$se
+    res$q <- NA_real_; res$q[ok] <- stats::p.adjust(res$p[ok], "BH")
+    res$status <- ifelse(!ok, "not_testable", ifelse(res$q <= rule("R-FDR"), "lead", "no_evidence"))
+    res$method_id <- default_id; res$n_reference <- length(u$ref_samples); res$n_level <- length(u$level_samples)
+    res$share_expected_by_chance <- NA_real_; res$excess_failures_p <- NA_real_
+    return(list(results = res, checks = NULL, share_failed = NA_real_, whole = FALSE, feats = feats, ud = ud))
+  }
   chk <- do.call(rbind, lapply(seq_along(feats), function(k) if (count_model) check_nb(ud, feats[k], k) else check_lm_clr(ud, feats[k])))
   share <- mean(chk$failed)
   # How many failures chance alone would give (the user asked for this to be
@@ -199,7 +212,7 @@ describe_lefse <- function(ud, feats) {
   data.frame(feature = r$features, lda_score = r$scores, note = "")
 }
 
-q4_abundance <- function(units, layers, choices) {
+q4_abundance <- function(units, layers, choices, decisions = NULL) {
   res <- list(); chk <- list(); agr <- list(); desc <- list(); notes <- list(); stats_for_q7 <- list()
   for (i in seq_along(units)) {
     u <- units[[i]]; L <- layers[[u$layer]]
@@ -207,11 +220,17 @@ q4_abundance <- function(units, layers, choices) {
     key <- unit_key(u)
     if (L$spec$unit != "count") { notes[[length(notes) + 1]] <- cbind(key, reason = sprintf("Q4 for unit %s is built at milestone E8", L$spec$unit)); next }
     if (!u$testable) { notes[[length(notes) + 1]] <- cbind(key, reason = u$reason); next }
-    x <- q4_unit(u, L, ch$final_id)
+    d <- if (is.null(decisions)) NULL else merge(key, decisions, by = names(key))
+    final <- if (!is.null(d) && nrow(d)) d$final_id[1] else ch$final_id
+    x <- q4_unit(u, L, final)
     if (!is.null(x$skip)) { notes[[length(notes) + 1]] <- cbind(key, reason = x$skip); next }
+    if (!is.null(d) && nrow(d)) {
+      if (final != ch$final_id) x$results$method_role <- ifelse(x$results$method_role == "default", "override", x$results$method_role)
+      if (nzchar(d$caveat[1])) x$results$caveat <- ifelse(nzchar(x$results$caveat), paste(x$results$caveat, d$caveat[1], sep = "; "), d$caveat[1])
+    }
     res[[i]] <- cbind(key, x$results, share_failed_checks = x$share_failed, whole_question_moved = x$whole)
-    chk[[i]] <- cbind(key, x$checks)
-    agr[[i]] <- cbind(key, q4_agreement(x$ud, x$feats, agreement_ids("Q4", L)))
+    chk[[i]] <- if (!is.null(x$checks)) cbind(key, x$checks)
+    agr[[i]] <- cbind(key, q4_agreement(x$ud, x$feats, setdiff(union(agreement_ids("Q4", L), ch$final_id), final)))
     lf <- describe_lefse(x$ud, x$feats)
     desc[[i]] <- cbind(key, method_id = "D19", lf, role = "describe_only")
     # Q7 ranks features by a z-score from each feature's final p-value and the

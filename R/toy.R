@@ -19,21 +19,25 @@
 #'   70 percent);
 #'   "presence" (toyG15 present in every treated sample, absent from every
 #'   control); "no_denominator" (no denominators file); "proportions" (the
-#'   layer as proportions, unit proportion).
+#'   layer as proportions, unit proportion); "calib" (20 subjects, 10 per
+#'   group, one timepoint, 2 mocks with a known composition: enough reference
+#'   samples for the override rule's simulation, E4) and "calib_mocks6" (the
+#'   same with 6 mocks, so the shuffled-label mock test can run).
 #'   In every variant with controls, toyG26-30 are contaminants: common in the
 #'   blanks, rare in study samples.
 #' @param seed random seed.
 #' @return the bundle folder, invisibly.
 #' @export
 make_toy_bundle <- function(dir, variant = c("main", "no_controls", "copy_null", "planted", "planted_da", "spread", "zeroinfl_few",
-                                             "zeroinfl_many", "presence", "no_denominator", "proportions"), seed = 20261029L) {
+                                             "zeroinfl_many", "presence", "no_denominator", "proportions", "calib", "calib_mocks6"), seed = 20261029L) {
   variant <- match.arg(variant)
   set.seed(seed)
   n_f <- 30
   feats <- sprintf("toyG%02d", seq_len(n_f))
-  subj <- sprintf("S%02d", 1:12)
-  group <- if (variant == "spread") rep(c("control", "treated"), c(9, 3)) else rep(c("control", "treated"), each = 6)
-  study <- expand.grid(t = c("T0", "T1"), s = seq_along(subj), stringsAsFactors = FALSE)
+  calib <- variant %in% c("calib", "calib_mocks6")
+  subj <- sprintf("S%02d", seq_len(if (calib) 20 else 12))
+  group <- if (variant == "spread") rep(c("control", "treated"), c(9, 3)) else rep(c("control", "treated"), each = length(subj) / 2)
+  study <- expand.grid(t = if (calib) "T0" else c("T0", "T1"), s = seq_along(subj), stringsAsFactors = FALSE)
   md <- data.frame(sample = sprintf("%s_%s", subj[study$s], study$t), subject = subj[study$s], group = group[study$s],
                    day = study$t, run = ifelse(study$s %% 2 == 1, "run1", "run2"), kind = "none", stringsAsFactors = FALSE)
   mu <- exp(stats::rnorm(n_f, 3, 1.2))
@@ -58,10 +62,13 @@ make_toy_bundle <- function(dir, variant = c("main", "no_controls", "copy_null",
     for (j in which(treated)) counts[j, ] <- stats::rnbinom(n_f, mu = c(rep(400, 3), rep(0.3, n_f - 3)) * depth[j], size = 2)
   }
   if (variant != "no_controls") {
-    ctl <- data.frame(sample = c("BLANK1", "BLANK2", "MOCK1"), subject = NA, group = NA, day = NA, run = "run1",
-                      kind = c("negative_extraction", "negative_extraction", "positive_mock"), stringsAsFactors = FALSE)
+    n_mock <- switch(variant, calib = 2, calib_mocks6 = 6, 1)
+    ctl <- data.frame(sample = c("BLANK1", "BLANK2", sprintf("MOCK%d", seq_len(n_mock))), subject = NA, group = NA, day = NA, run = "run1",
+                      kind = c("negative_extraction", "negative_extraction", rep("positive_mock", n_mock)), stringsAsFactors = FALSE)
     blank <- function() stats::rnbinom(n_f, mu = c(rep(0.05, n_f - 5), rep(30, 5)), size = 2)
-    counts <- rbind(counts, blank(), blank(), c(rep(200, 8), rep(0, n_f - 8)))
+    # The mock: 8 known members at equal abundance (toyG01-08).
+    mock <- function() if (n_mock == 1) c(rep(200, 8), rep(0, n_f - 8)) else c(stats::rnbinom(8, mu = 200, size = 50), rep(0, n_f - 8))
+    counts <- rbind(counts, blank(), blank(), t(vapply(seq_len(n_mock), function(i) mock(), numeric(n_f))))
     md <- rbind(md, ctl)
   }
   if (variant == "no_controls") md$kind <- NULL
@@ -84,6 +91,7 @@ make_toy_bundle <- function(dir, variant = c("main", "no_controls", "copy_null",
   cls <- rep(c("A", "B", "C"), length.out = n_f)
   if (variant == "planted_da") cls[6:8] <- "planted"
   tsv(data.frame(feature = feats, label = sprintf("toy gene %d", seq_len(n_f)), toy_class = cls), "layers/toy_counts_features.tsv")
+  if (calib) tsv(data.frame(feature = feats[1:8], proportion = 0.125), "layers/mock_composition.tsv")
   if (!variant %in% c("no_denominator", "proportions"))
     tsv(data.frame(sample = md$sample, total_reads = as.integer(rowSums(counts) * 50 + 1000)), "layers/toy_counts_denominators.tsv")
   yaml::write_yaml(list(
@@ -94,6 +102,7 @@ make_toy_bundle <- function(dir, variant = c("main", "no_controls", "copy_null",
                        unit = if (variant == "proportions") "proportion" else "count", feature_level = "toy gene",
                        features = "layers/toy_counts_features.tsv", feature_columns = list(label = "label", toy_class = "set"),
                        denominators = if (!variant %in% c("no_denominator", "proportions")) list(file = "layers/toy_counts_denominators.tsv", columns = list(total_reads = "reads")),
+                       mock_composition = if (calib) "layers/mock_composition.tsv",
                        source = list(tool = "make_toy_bundle", version = "1"))))),
     file.path(dir, "manifest.yaml"))
   invisible(dir)

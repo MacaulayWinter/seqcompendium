@@ -35,7 +35,7 @@ unbuilt_rows <- function(layers, des, built = c("Q0", "Q3", "Q4", "Q5", "Q7")) {
                                                           feature = "all", caveats = plan[[Q]][2])))
 }
 
-METHOD_NAMES <- c(A02 = "Hill numbers at equal sample coverage (iNEXT), Welch t-test", D01 = "DESeq2, denominator as offset", D09 = "LinDA",
+METHOD_NAMES <- c(A02 = "Hill numbers at equal sample coverage (iNEXT), Welch t-test", D01 = "DESeq2, denominator as offset", D09 = "LinDA", D06 = "ANCOM-BC2", D04 = "ALDEx2",
                   R02 = "zero-inflated negative binomial", K02 = "Wilcoxon rank-sum test on the Hill numbers", K04 = "permutation test on CLR", K01 = "Welch t-test on CLR", D17 = "Wilcoxon on CLR",
                   R01 = "logistic regression", G06 = "Firth logistic regression", E02 = "pre-ranked fgsea", N11 = "decontam (prevalence)",
                   `B06 PERMANOVA` = "PERMANOVA on robust Aitchison distance, with betadisper", `B14 mvabund` = "mvabund (negative binomial), betadisper differs")

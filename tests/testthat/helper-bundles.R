@@ -54,3 +54,7 @@ run_fixture <- function(variant) {
   .runs[[variant]]
 }
 res_csv <- function(x, f) utils::read.csv(file.path(x$o, f), stringsAsFactors = FALSE)
+
+# The override rule's simulation uses R-SIMREP (100) data sets; tests use 6
+# so a run takes seconds, not hours (CLAUDE.md D20). Production is unchanged.
+options(seqcompendium.simrep = 6)

@@ -674,6 +674,35 @@
       "NeedsCompilation": "yes",
       "Author": "Michael Love [aut, cre], Constantin Ahlmann-Eltze [ctb], Anqi Zhu [ctb], Nikolaos Ignatiadis [ctb], Raphael Rossellini [ctb], Kwame Forbes [ctb], Simon Anders [aut, ctb], Wolfgang Huber [aut, ctb], RADIANT EU FP7 [fnd], NIH NHGRI [fnd], CZI [fnd]"
     },
+    "DEoptimR": {
+      "Package": "DEoptimR",
+      "Version": "1.2-2",
+      "Source": "Repository",
+      "Date": "2026-09-25",
+      "Title": "Differential Evolution Optimization in Pure R",
+      "Authors@R": "c( person(c(\"Eduardo\", \"L. T.\"), \"Conceicao\", role = c(\"aut\", \"cre\"), email = \"mail@eduardoconceicao.org\"), person(\"Martin\", \"Maechler\", role = \"ctb\", email = \"maechler@stat.math.ethz.ch\", comment = c(ORCID = \"0000-0002-8685-9910\")) )",
+      "URL": "svn://svn.r-forge.r-project.org/svnroot/robustbase/pkg/DEoptimR",
+      "Description": "Differential Evolution (DE) stochastic heuristic algorithms for global optimization of problems with and without general constraints. The aim is to curate a collection of its variants that (1) do not sacrifice simplicity of design, (2) are essentially tuning-free, and (3) can be efficiently implemented directly in the R language. Currently, it provides implementations of the algorithms 'jDE' by Brest et al. (2006) <doi:10.1109/TEVC.2006.872133> for single-objective optimization and 'NCDE' by Qu et al. (2012) <doi:10.1109/TEVC.2011.2161873> for multimodal optimization (single-objective problems with multiple solutions).",
+      "Imports": [
+        "stats",
+        "methods"
+      ],
+      "Suggests": [
+        "mirai (>= 2.7.1)"
+      ],
+      "Enhances": [
+        "robustbase"
+      ],
+      "License": "GPL (>= 2)",
+      "Author": "Eduardo L. T. Conceicao [aut, cre], Martin Maechler [ctb] (ORCID: <https://orcid.org/0000-0002-8685-9910>)",
+      "Maintainer": "Eduardo L. T. Conceicao <mail@eduardoconceicao.org>",
+      "Repository": "RSPM",
+      "Repository/R-Forge/Project": "robustbase",
+      "Repository/R-Forge/Revision": "1036",
+      "Repository/R-Forge/DateTimeStamp": "2026-09-25 19:31:26",
+      "NeedsCompilation": "no",
+      "Encoding": "UTF-8"
+    },
     "DHARMa": {
       "Package": "DHARMa",
       "Version": "0.5.0",
@@ -1077,6 +1106,32 @@
       "Repository": "RSPM",
       "Encoding": "UTF-8"
     },
+    "GPArotation": {
+      "Package": "GPArotation",
+      "Version": "2026.8-2",
+      "Source": "Repository",
+      "Title": "Gradient Projection Factor Rotation",
+      "Authors@R": "c( person(\"Coen\", \"Bernaards\", email = \"cab.gparotation@gmail.com\", role = c(\"aut\", \"cre\")), person(\"Paul\", \"Gilbert\", role = \"aut\"), person(\"Robert\", \"Jennrich\", role = \"aut\") )",
+      "Depends": [
+        "R (>= 3.5.0)"
+      ],
+      "Description": "Gradient projection algorithms for orthogonal and oblique rotation of factor loadings matrices in factor analysis. Implements a comprehensive set of rotation criteria including quartimax, quartimin, oblimin, geomin, simplimax, the Crawford-Ferguson family, and target rotation, among others.  Supports multiple random starts. For details see Bernaards and Jennrich (2005) <doi:10.1177/0013164404272507>.",
+      "License": "GPL (>= 2)",
+      "URL": "https://cran.r-project.org/package=GPArotation",
+      "Imports": [
+        "stats",
+        "grDevices",
+        "graphics",
+        "utils"
+      ],
+      "VignetteBuilder": "utils",
+      "LazyData": "yes",
+      "NeedsCompilation": "no",
+      "Author": "Coen Bernaards [aut, cre], Paul Gilbert [aut], Robert Jennrich [aut]",
+      "Maintainer": "Coen Bernaards <cab.gparotation@gmail.com>",
+      "Repository": "RSPM",
+      "Encoding": "UTF-8"
+    },
     "GenomicRanges": {
       "Package": "GenomicRanges",
       "Version": "1.64.0",
@@ -1333,6 +1388,46 @@
       "Maintainer": "Brian Ripley <Brian.Ripley@R-project.org>",
       "Repository": "RSPM",
       "Encoding": "UTF-8"
+    },
+    "MIDASim": {
+      "Package": "MIDASim",
+      "Version": "2.0",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Simulating Realistic Microbiome Data using 'MIDASim'",
+      "Description": "The 'MIDASim' package is a microbiome data simulator for generating realistic microbiome datasets by adapting a user-provided template. It supports the controlled introduction of experimental signals-such as shifts in taxon relative abundances, prevalence, and sample library sizes-to create distinct synthetic populations under diverse simulation scenarios. For more details, see He et al. (2024) <doi:10.1186/s40168-024-01822-z>.",
+      "Imports": [
+        "psych",
+        "MASS",
+        "pracma",
+        "scam",
+        "stats"
+      ],
+      "biocViews": "",
+      "Suggests": [
+        "vegan",
+        "phyloseq",
+        "rmarkdown",
+        "knitr",
+        "roxygen2",
+        "testthat"
+      ],
+      "Authors@R": "person(given = \"Mengyu\", family = \"He\", role = c(\"aut\", \"cre\"), email = \"mhe44@emory.edu\")",
+      "URL": "https://github.com/mengyu-he/MIDASim",
+      "BugReports": "https://github.com/mengyu-he/MIDASim/issues",
+      "LazyData": "true",
+      "License": "GPL-2",
+      "Encoding": "UTF-8",
+      "Depends": [
+        "R (>= 3.5.0)"
+      ],
+      "VignetteBuilder": "knitr",
+      "RoxygenNote": "7.3.1",
+      "Config/testthat/edition": "3",
+      "NeedsCompilation": "no",
+      "Author": "Mengyu He [aut, cre]",
+      "Maintainer": "Mengyu He <mhe44@emory.edu>",
+      "Repository": "RSPM"
     },
     "Matrix": {
       "Package": "Matrix",
@@ -2976,6 +3071,42 @@
       "Repository": "RSPM",
       "Encoding": "UTF-8"
     },
+    "bayesm": {
+      "Package": "bayesm",
+      "Version": "3.1-7",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Bayesian Inference for Marketing/Micro-Econometrics",
+      "Depends": [
+        "R (>= 3.2.0)"
+      ],
+      "Date": "2025-11-09",
+      "Authors@R": "c(person(given = \"Peter\", family = \"Rossi\", role = c(\"aut\", \"cre\"),  email = \"perossichi@gmail.com\"), person(given = \"Robert\", family = \"McCulloch\", role = \"ctb\"), person(given = \"Wayne\", family = \"Taylor\", role = \"ctb\"), person(given = \"Dan\", family = \"Yavorsky\", role = \"ctb\") )",
+      "Maintainer": "Peter Rossi <perossichi@gmail.com>",
+      "License": "GPL (>= 2)",
+      "Imports": [
+        "Rcpp (>= 0.12.0)",
+        "utils",
+        "stats",
+        "graphics",
+        "grDevices"
+      ],
+      "LinkingTo": [
+        "Rcpp",
+        "RcppArmadillo"
+      ],
+      "Suggests": [
+        "knitr",
+        "rmarkdown"
+      ],
+      "VignetteBuilder": "knitr",
+      "Description": "Covers many important models used in marketing and micro-econometrics applications.  The package includes: Bayes Regression (univariate or multivariate dep var), Bayes Seemingly Unrelated Regression (SUR), Binary and Ordinal Probit, Multinomial Logit (MNL) and Multinomial Probit (MNP), Multivariate Probit, Negative Binomial (Poisson) Regression, Multivariate Mixtures of Normals (including clustering), Dirichlet Process Prior Density Estimation with normal base, Hierarchical Linear Models with normal prior and covariates, Hierarchical Linear Models with a mixture of normals prior and covariates, Hierarchical Multinomial Logits with a mixture of normals prior and covariates, Hierarchical Multinomial Logits with a Dirichlet Process prior and covariates, Hierarchical Negative Binomial Regression Models, Bayesian analysis of choice-based conjoint data, Bayesian treatment of linear instrumental variables models, Analysis of Multivariate Ordinal survey data with scale usage heterogeneity (as in Rossi et al, JASA (01)), Bayesian Analysis of Aggregate Random Coefficient Logit Models as in BLP (see Jiang, Manchanda, Rossi 2009) For further reference, consult our book, Bayesian Statistics and Marketing by Rossi, Allenby and McCulloch (Wiley second edition 2024) and Bayesian Non- and Semi-Parametric Methods and Applications (Princeton U Press 2014).",
+      "RoxygenNote": "6.0.1",
+      "NeedsCompilation": "yes",
+      "Author": "Peter Rossi [aut, cre], Robert McCulloch [ctb], Wayne Taylor [ctb], Dan Yavorsky [ctb]",
+      "Repository": "RSPM",
+      "Encoding": "UTF-8"
+    },
     "bbotk": {
       "Package": "bbotk",
       "Version": "1.13.1",
@@ -4015,6 +4146,45 @@
       "Author": "Jeroen Ooms [aut, cre] (ORCID: <https://orcid.org/0000-0002-4035-0289>), John MacFarlane [cph] (Author of cmark)",
       "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
       "Repository": "RSPM"
+    },
+    "compositions": {
+      "Package": "compositions",
+      "Version": "2.0-9",
+      "Source": "Repository",
+      "Date": "2025-08-20",
+      "Title": "Compositional Data Analysis",
+      "Authors@R": "c(person(given = c(\"K.\", \"Gerald\"), family = \"van den Boogaart\", role = c(\"aut\", \"cre\"), email = \"support@boogaart.de\"), person(given = \"Raimon\", family = \"Tolosana-Delgado\", role = \"aut\"), person(given = \"Matevz\", family = \"Bren\", role = \"aut\"))",
+      "Depends": [
+        "R (>= 3.6)"
+      ],
+      "Imports": [
+        "methods",
+        "utils",
+        "grDevices",
+        "stats",
+        "tensorA",
+        "robustbase",
+        "bayesm",
+        "graphics",
+        "MASS"
+      ],
+      "Suggests": [
+        "rgl (>= 1.0.1)",
+        "combinat",
+        "energy",
+        "knitr",
+        "rmarkdown"
+      ],
+      "Description": "Provides functions for the consistent analysis of compositional  data (e.g. portions of substances) and positive numbers (e.g. concentrations)  in the way proposed by J. Aitchison and V. Pawlowsky-Glahn.",
+      "License": "GPL (>= 2)",
+      "URL": "http://www.stat.boogaart.de/compositions/",
+      "VignetteBuilder": "knitr",
+      "RoxygenNote": "7.1.1",
+      "NeedsCompilation": "yes",
+      "Author": "K. Gerald van den Boogaart [aut, cre], Raimon Tolosana-Delgado [aut], Matevz Bren [aut]",
+      "Maintainer": "K. Gerald van den Boogaart <support@boogaart.de>",
+      "Repository": "RSPM",
+      "Encoding": "UTF-8"
     },
     "cowplot": {
       "Package": "cowplot",
@@ -8070,6 +8240,58 @@
       "Author": "Stef van Buuren [aut, cre], Karin Groothuis-Oudshoorn [aut], Gerko Vink [ctb], Rianne Schouten [ctb], Alexander Robitzsch [ctb], Patrick Rockenschaub [ctb], Lisa Doove [ctb], Shahab Jolani [ctb], Margarita Moreno-Betancur [ctb], Ian White [ctb], Philipp Gaffert [ctb], Florian Meinfelder [ctb], Bernie Gray [ctb], Vincent Arel-Bundock [ctb], Mingyang Cai [ctb], Thom Volker [ctb], Edoardo Costantini [ctb], Caspar van Lissa [ctb], Hanne Oberman [ctb], Stephen Wade [ctb], Florian van Leeuwen [ctb], Frederik Fabricius-Bjerre [ctb]",
       "Repository": "RSPM"
     },
+    "microbiome": {
+      "Package": "microbiome",
+      "Version": "1.34.0",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Microbiome Analytics",
+      "Description": "Utilities for microbiome analysis.",
+      "Encoding": "UTF-8",
+      "Date": "2025-07-24",
+      "Authors@R": "c( person(\"Leo\", \"Lahti\", email = \"leo.lahti@iki.fi\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0001-5537-637X\")), person(\"Sudarshan\", \"Shetty\", role = \"aut\", comment = c(ORCID = \"0000-0001-7280-9915\")))",
+      "biocViews": "Metagenomics,Microbiome,Sequencing,SystemsBiology",
+      "License": "BSD_2_clause + file LICENSE",
+      "Depends": [
+        "R (>= 3.6.0)",
+        "phyloseq",
+        "ggplot2"
+      ],
+      "Imports": [
+        "Biostrings",
+        "compositions",
+        "dplyr",
+        "reshape2",
+        "Rtsne",
+        "scales",
+        "stats",
+        "tibble",
+        "tidyr",
+        "utils",
+        "vegan"
+      ],
+      "Suggests": [
+        "BiocGenerics",
+        "BiocStyle",
+        "Cairo",
+        "knitr",
+        "rmarkdown",
+        "testthat"
+      ],
+      "URL": "http://microbiome.github.io/microbiome",
+      "MailingList": "microbiome <microbiome-devel@googlegroups.com>",
+      "BugReports": "https://github.com/microbiome/microbiome/issues",
+      "VignetteBuilder": "knitr",
+      "RoxygenNote": "7.3.2",
+      "git_url": "https://git.bioconductor.org/packages/microbiome",
+      "git_branch": "RELEASE_3_23",
+      "git_last_commit": "44a9416",
+      "git_last_commit_date": "2026-04-28",
+      "Repository": "RSPM",
+      "NeedsCompilation": "no",
+      "Author": "Leo Lahti [aut, cre] (ORCID: <https://orcid.org/0000-0001-5537-637X>), Sudarshan Shetty [aut] (ORCID: <https://orcid.org/0000-0001-7280-9915>)",
+      "Maintainer": "Leo Lahti <leo.lahti@iki.fi>"
+    },
     "mime": {
       "Package": "mime",
       "Version": "0.13",
@@ -8450,6 +8672,25 @@
       "Config/roxygen2/version": "8.1.0",
       "Author": "Marc Becker [cre, aut] (ORCID: <https://orcid.org/0000-0002-8115-0400>), Michel Lang [aut] (ORCID: <https://orcid.org/0000-0001-9754-0393>), Jakob Richter [aut] (ORCID: <https://orcid.org/0000-0003-4481-5554>), Bernd Bischl [aut] (ORCID: <https://orcid.org/0000-0001-6002-6980>), Daniel Schalk [aut] (ORCID: <https://orcid.org/0000-0003-0950-1947>)",
       "Maintainer": "Marc Becker <marcbecker@posteo.de>",
+      "Repository": "RSPM"
+    },
+    "mnormt": {
+      "Package": "mnormt",
+      "Version": "2.1.2",
+      "Source": "Repository",
+      "Date": "2026-01-25",
+      "Title": "The Multivariate Normal and t Distributions, and Their Truncated Versions",
+      "Authors@R": "c(person(given = \"Adelchi\", family = \"Azzalini\", role = c(\"aut\", \"cre\"), email = \"adelchi.azzalini@unipd.it\"), person(given = \"Alan\", family = \"Genz\", role = \"aut\", comment = \"most Fortran code\"), person(given = \"Alan\", family = \"Miller\", role = \"ctb\", comment = \"Fortran routine PHI\"), person(given = c(\"Michael\", \"J.\"), family = \"Wichura\", role = \"ctb\", comment = \"Fortran routine PHINV\"), person(given = c(\"G.\", \"W.\"), family = \"Hill\", role = \"ctb\", comment = \"Fortran routine STDINV\"), person(given = \"Yihong\", family = \"Ge.\", role = \"ctb\", comment = \"Fortran routines BNVU and MVBVU\"))",
+      "Maintainer": "Adelchi Azzalini <adelchi.azzalini@unipd.it>",
+      "Depends": [
+        "R (>= 3.0.0)"
+      ],
+      "Description": "Functions are provided for computing the density and the distribution function of multi-dimensional normal and \"t\" random variables, possibly truncated (on one side or two sides),  and for generating random  vectors sampled from these distributions, except sampling from the truncated \"t\". Moments of arbitrary order of a multivariate truncated normal are computed, and converted to cumulants up to order 4.  Probabilities are computed via non-Monte Carlo methods; different routines  are used in the case d=1, d=2, d=3, d>3, if d denotes the dimensionality.",
+      "License": "GPL-2 | GPL-3",
+      "URL": "http://azzalini.stat.unipd.it/SW/Pkg-mnormt/",
+      "NeedsCompilation": "yes",
+      "Encoding": "UTF-8",
+      "Author": "Adelchi Azzalini [aut, cre], Alan Genz [aut] (most Fortran code), Alan Miller [ctb] (Fortran routine PHI), Michael J. Wichura [ctb] (Fortran routine PHINV), G. W. Hill [ctb] (Fortran routine STDINV), Yihong Ge. [ctb] (Fortran routines BNVU and MVBVU)",
       "Repository": "RSPM"
     },
     "modeest": {
@@ -9659,6 +9900,37 @@
       "Repository": "RSPM",
       "Encoding": "UTF-8"
     },
+    "pracma": {
+      "Package": "pracma",
+      "Version": "2.4.6",
+      "Source": "Repository",
+      "Type": "Package",
+      "Date": "2025-10-20",
+      "Title": "Practical Numerical Math Functions",
+      "Authors@R": "person(\"Hans W.\", \"Borchers\",  email=\"hwborchers@googlemail.com\",  role=c(\"aut\", \"cre\"))",
+      "Depends": [
+        "R (>= 3.1.0)"
+      ],
+      "Imports": [
+        "graphics",
+        "grDevices",
+        "stats",
+        "utils"
+      ],
+      "Suggests": [
+        "NlcOptim",
+        "quadprog"
+      ],
+      "Description": "Provides a large number of functions from numerical analysis and linear algebra, numerical optimization, differential equations, time series, plus some well-known special mathematical functions. Uses 'MATLAB' function names where appropriate to simplify porting.",
+      "License": "GPL (>= 3)",
+      "ByteCompile": "true",
+      "LazyData": "yes",
+      "NeedsCompilation": "no",
+      "Author": "Hans W. Borchers [aut, cre]",
+      "Maintainer": "Hans W. Borchers <hwborchers@googlemail.com>",
+      "Repository": "RSPM",
+      "Encoding": "UTF-8"
+    },
     "praise": {
       "Package": "praise",
       "Version": "1.0.0",
@@ -9926,6 +10198,45 @@
       "NeedsCompilation": "yes",
       "Author": "Simon Jackman [aut, cre] (<https://orcid.org/0000-0001-7421-4034>), Alex Tahk [ctb] (<https://orcid.org/0000-0001-7895-9420>), Achim Zeileis [ctb] (<https://orcid.org/0000-0003-0918-3766>), Christina Maimone [ctb] (<https://orcid.org/0000-0002-0402-6297>), James Fearon [ctb], Zoe Meers [ctb] (<https://orcid.org/0000-0001-8045-6531>)",
       "Maintainer": "Simon Jackman <simon.jackman@sydney.edu.au>",
+      "Repository": "RSPM",
+      "Encoding": "UTF-8"
+    },
+    "psych": {
+      "Package": "psych",
+      "Version": "2.6.9",
+      "Source": "Repository",
+      "Date": "2026-09-22",
+      "Title": "Procedures for Psychological, Psychometric, and Personality Research",
+      "Authors@R": "person(\"William\", \"Revelle\", role =c(\"aut\",\"cre\"), email=\"revelle@northwestern.edu\", comment=c(ORCID  = \"0000-0003-4880-9610\") )",
+      "Description": "A general purpose toolbox developed originally for personality, psychometric theory and experimental psychology.  Functions are primarily for multivariate analysis and scale construction using factor analysis, principal component analysis, cluster analysis and reliability analysis, although others provide basic descriptive statistics. Item Response Theory is done using  factor analysis of tetrachoric and polychoric correlations. Functions for analyzing data at multiple levels include within and between group statistics, including correlations and factor analysis.  Validation and cross validation of scales developed using basic machine learning algorithms are provided, as are functions for simulating and testing particular item and test structures. Several functions  serve as a useful front end for structural equation modeling.  Graphical displays of path diagrams, including mediation models, factor analysis and structural equation models are created using basic graphics. Some of the functions are written to support a book on psychometric theory as well as publications in personality research. For more information, see the <https://personality-project.org/r/> web page.",
+      "License": "GPL (>= 2)",
+      "Imports": [
+        "mnormt",
+        "parallel",
+        "stats",
+        "graphics",
+        "grDevices",
+        "methods",
+        "lattice",
+        "nlme",
+        "GPArotation"
+      ],
+      "Suggests": [
+        "psychTools",
+        "lavaan",
+        "lme4",
+        "Rcsdp",
+        "graph",
+        "knitr",
+        "Rgraphviz"
+      ],
+      "LazyData": "yes",
+      "ByteCompile": "true",
+      "VignetteBuilder": "knitr",
+      "URL": "https://personality-project.org/r/psych/ https://personality-project.org/r/psych-manual.pdf",
+      "NeedsCompilation": "no",
+      "Author": "William Revelle [aut, cre] (ORCID: <https://orcid.org/0000-0003-4880-9610>)",
+      "Maintainer": "William Revelle <revelle@northwestern.edu>",
       "Repository": "RSPM",
       "Encoding": "UTF-8"
     },
@@ -10537,6 +10848,65 @@
       "Maintainer": "Renaud Gaujoux <renozao@protonmail.com>",
       "Repository": "RSPM"
     },
+    "robustbase": {
+      "Package": "robustbase",
+      "Version": "0.99-7",
+      "Source": "Repository",
+      "VersionNote": "Released 0.99-6 on 2025-09-03, 0.99-5 on 2024-11-01, 0.99-4-1 on 2024-09-24, 0.99-4 on 2024-08-19 to CRAN",
+      "Date": "2026-02-03",
+      "Title": "Basic Robust Statistics",
+      "Authors@R": "c(person(\"Martin\",\"Maechler\", role=c(\"aut\",\"cre\"), email=\"maechler@stat.math.ethz.ch\", comment = c(ORCID = \"0000-0002-8685-9910\")) , person(\"Peter\", \"Rousseeuw\", role=\"ctb\", comment = \"Qn and Sn\") , person(\"Christophe\", \"Croux\", role=\"ctb\", comment = \"Qn and Sn\") , person(\"Valentin\", \"Todorov\", role = \"aut\", email = \"valentin.todorov@chello.at\", comment = \"most robust Cov\") , person(\"Andreas\", \"Ruckstuhl\", role = \"aut\", email = \"andreas.ruckstuhl@zhaw.ch\", comment = \"nlrob, anova, glmrob\") , person(\"Matias\", \"Salibian-Barrera\", role = \"aut\", email = \"matias@stat.ubc.ca\", comment = \"lmrob orig.\") , person(\"Tobias\", \"Verbeke\", role = c(\"ctb\",\"fnd\"), email = \"tobias.verbeke@openanalytics.eu\", comment = \"mc, adjbox\") , person(\"Manuel\", \"Koller\", role = \"aut\", email = \"koller.manuel@gmail.com\", comment = \"mc, lmrob, psi-func.\") , person(c(\"Eduardo\", \"L. T.\"), \"Conceicao\", role = \"aut\", email = \"mail@eduardoconceicao.org\", comment = \"MM-, tau-, CM-, and MTL- nlrob\") , person(\"Maria\", \"Anna di Palma\", role = \"ctb\", comment = \"initial version of Comedian\") )",
+      "URL": "https://robustbase.R-forge.R-project.org/, https://R-forge.R-project.org/R/?group_id=59, https://R-forge.R-project.org/scm/viewvc.php/pkg/robustbase/?root=robustbase, svn://svn.r-forge.r-project.org/svnroot/robustbase/pkg/robustbase",
+      "BugReports": "https://R-forge.R-project.org/tracker/?atid=302&group_id=59",
+      "Description": "\"Essential\" Robust Statistics. Tools allowing to analyze data with robust methods.  This includes regression methodology including model selections and multivariate statistics where we strive to cover the book \"Robust Statistics, Theory and Methods\" by 'Maronna, Martin and Yohai'; Wiley 2006.",
+      "Depends": [
+        "R (>= 3.5.0)"
+      ],
+      "Imports": [
+        "stats",
+        "graphics",
+        "utils",
+        "methods",
+        "DEoptimR"
+      ],
+      "Suggests": [
+        "grid",
+        "MASS",
+        "lattice",
+        "boot",
+        "cluster",
+        "Matrix",
+        "robust",
+        "fit.models",
+        "MPV",
+        "xtable",
+        "ggplot2",
+        "GGally",
+        "RColorBrewer",
+        "reshape2",
+        "sfsmisc",
+        "catdata",
+        "doParallel",
+        "foreach",
+        "skewt"
+      ],
+      "SuggestsNote": "mostly only because of vignette graphics and simulation",
+      "Enhances": [
+        "robustX",
+        "rrcov",
+        "matrixStats",
+        "quantreg",
+        "Hmisc"
+      ],
+      "EnhancesNote": "linked to in man/*.Rd",
+      "LazyData": "yes",
+      "NeedsCompilation": "yes",
+      "License": "GPL (>= 2)",
+      "Author": "Martin Maechler [aut, cre] (ORCID: <https://orcid.org/0000-0002-8685-9910>), Peter Rousseeuw [ctb] (Qn and Sn), Christophe Croux [ctb] (Qn and Sn), Valentin Todorov [aut] (most robust Cov), Andreas Ruckstuhl [aut] (nlrob, anova, glmrob), Matias Salibian-Barrera [aut] (lmrob orig.), Tobias Verbeke [ctb, fnd] (mc, adjbox), Manuel Koller [aut] (mc, lmrob, psi-func.), Eduardo L. T. Conceicao [aut] (MM-, tau-, CM-, and MTL- nlrob), Maria Anna di Palma [ctb] (initial version of Comedian)",
+      "Maintainer": "Martin Maechler <maechler@stat.math.ethz.ch>",
+      "Repository": "RSPM",
+      "Encoding": "UTF-8"
+    },
     "rootSolve": {
       "Package": "rootSolve",
       "Version": "1.8.2.4",
@@ -10803,6 +11173,38 @@
       "Author": "Hadley Wickham [aut], Thomas Lin Pedersen [cre, aut] (<https://orcid.org/0000-0002-5147-4711>), Dana Seidel [aut], Posit Software, PBC [cph, fnd] (03wc8by49)",
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
       "Repository": "RSPM"
+    },
+    "scam": {
+      "Package": "scam",
+      "Version": "1.2-22",
+      "Source": "Repository",
+      "Authors@R": "person(given = \"Natalya\", family = \"Pya\", role = c(\"aut\", \"cre\"), email = \"nat.pya@gmail.com\")",
+      "Maintainer": "Natalya Pya <nat.pya@gmail.com>",
+      "Title": "Shape Constrained Additive Models",
+      "Date": "2026-03-12",
+      "Description": "Generalized additive models under shape constraints on the component functions of the linear predictor.        Models can include multiple shape-constrained (univariate and bivariate) and unconstrained terms. Routines of the  package 'mgcv' are used to set up the model matrix, print,  and plot the results. Multiple smoothing parameter  estimation by the Generalized Cross Validation or similar. See Pya and Wood (2015) <doi:10.1007/s11222-013-9448-7>  for an overview. A broad selection of shape-constrained  smoothers, linear functionals of smooths with shape constraints, and Gaussian models with AR1 residuals.",
+      "Depends": [
+        "R (>= 3.6.0)"
+      ],
+      "Imports": [
+        "mgcv (>= 1.8-2)",
+        "methods",
+        "stats",
+        "graphics",
+        "Matrix",
+        "splines"
+      ],
+      "Suggests": [
+        "nlme",
+        "emmeans (>= 1.4.2)",
+        "estimability"
+      ],
+      "License": "GPL (>= 2)",
+      "LazyLoad": "yes",
+      "NeedsCompilation": "yes",
+      "Author": "Natalya Pya [aut, cre]",
+      "Repository": "RSPM",
+      "Encoding": "UTF-8"
     },
     "scater": {
       "Package": "scater",
@@ -11534,6 +11936,25 @@
       "Author": "Thomas Lin Pedersen [aut, cre] (ORCID: <https://orcid.org/0000-0002-5147-4711>), Jeroen Ooms [aut] (ORCID: <https://orcid.org/0000-0002-4035-0289>), Devon Govett [aut] (Author of font-manager), Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)",
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
       "Repository": "RSPM"
+    },
+    "tensorA": {
+      "Package": "tensorA",
+      "Version": "0.36.2.1",
+      "Source": "Repository",
+      "Date": "2020-11-13",
+      "Title": "Advanced Tensor Arithmetic with Named Indices",
+      "Author": "K. Gerald van den Boogaart <boogaart@uni-greifswald.de>",
+      "Maintainer": "K. Gerald van den Boogaart <boogaart@math.tu-freiberg.de>",
+      "Depends": [
+        "R (>= 2.2.0)",
+        "stats"
+      ],
+      "Description": "Provides convenience functions for advanced linear algebra with tensors and computation with data sets of tensors on a higher level abstraction. It includes Einstein and Riemann summing conventions, dragging, co- and contravariate indices, parallel computations on sequences of tensors.",
+      "License": "GPL (>= 2)",
+      "URL": "http://www.stat.boogaart.de/tensorA/",
+      "NeedsCompilation": "yes",
+      "Repository": "RSPM",
+      "Encoding": "UTF-8"
     },
     "testthat": {
       "Package": "testthat",
