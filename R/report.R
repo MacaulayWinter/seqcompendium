@@ -53,7 +53,7 @@ write_report <- function(out, ctx) {
     tb <- table(factor(r$agreement_label, levels = c("agreed", "partly agreed", "disagreed", "not testable")))
     sprintf("Per result: %s.", paste(sprintf("%s %d", names(tb), as.vector(tb)), collapse = ", "))
   }
-  batch_note <- if (length(des$batch)) sprintf(" Batch %s is not adjusted for yet (milestone E5).", q(des$batch)) else ""
+  batch_note <- " What each result was adjusted for is in its `adjusted_for` column (batch and the other declared predictors where the sample size allows; CLAUDE.md D24)."
   res <- ctx$res
 
   add("## 7. Q0. Which features look like contaminants?", "")
@@ -78,7 +78,8 @@ write_report <- function(out, ctx) {
     pv <- function(k) prof$value[prof$property == k]
     add(sprintf("### Layer `%s`, by `%s`", nm, p), "")
     five(sprintf("Does the number and evenness of features (alpha diversity, Hill numbers q = 0, 1, 2) differ between the levels of `%s`, against the reference level `%s`, at each timepoint and block separately? Timepoints are never pooled.", p, des$levels_of(p)[1]),
-         sprintf("Hill numbers at equal sample coverage (iNEXT, catalogue A02), compared with Welch t-tests (K01). Chosen because the data are counts (shape %s), library size varies %s-fold between study samples, and within each timepoint every subject is sampled once (design class: %s). Standardising to equal coverage (here %s) avoids comparing deeply and shallowly sequenced samples unfairly; Welch's test does not assume equal spread. q-values: Benjamini-Hochberg within each contrast, timepoint and block, over the three orders.",
+         sprintf("%sHill numbers at equal sample coverage (iNEXT, catalogue A02), compared with Welch t-tests (K01) or, when covariates apply (D24), a linear model. Chosen because the data are counts (shape %s), library size varies %s-fold between study samples, and within each timepoint every subject is sampled once (design class: %s). Standardising to equal coverage (here %s) avoids comparing deeply and shallowly sequenced samples unfairly; Welch's test does not assume equal spread. q-values: Benjamini-Hochberg within each contrast, timepoint and block, over the three orders.",
+                 if (isTRUE(res$long)) "Because the same subjects were sampled over time, a linear mixed model with subject as a random effect (L01) was used, set up so each timepoint's difference is its own estimate (timepoints are never pooled). " else "",
                  pv("shape"), pv("library_size_max_over_min"), des$class, paste(cov, collapse = ", ")),
          sprintf("Residual skewness above %s moves a comparison to the Wilcoxon rank-sum test; %d of %d comparisons moved (`03_results/Q2_alpha/diagnostics.csv`).", rule("R-SKEW"), sum(x$method_role != "default"), nrow(x)),
          sprintf("A handful of samples per group gives little power: a difference can be real and still not reach q <= %s. Each predictor is compared on its own.%s Hill numbers count features, so one organism or gene split by the database inflates q = 0.%s",
@@ -144,8 +145,10 @@ write_report <- function(out, ctx) {
                                              sum(r4$rung > 0), nrow(r4), length(unique(paste(r4$timepoint, r4$block, r4$contrast)[r4$whole_question_moved %in% TRUE])), rule("R-EXCESS")),
                                              if (any(is.finite(r4$share_expected_by_chance))) sprintf("**Some of these failures are expected by chance alone:** each feature gets 3 checks at p < %s, so about %.0f%% of features that fit well fail at least one. Compare that with the share that failed in each comparison (column `share_failed_checks`). A share near %.0f%% means most moves are probably chance; a much larger share means the model really does not suit these data. Either way, a moved feature's result is valid: it comes from a method that assumes less.",
                                                                                                 rule("R-DIAGP"), 100 * max(r4$share_expected_by_chance, na.rm = TRUE), 100 * max(r4$share_expected_by_chance, na.rm = TRUE)) else ""),
-    sprintf("No differential-abundance method is best on all data (Nearing 2022; Wirbel 2024), which is why the alternatives are shown. A per-denominator fold change is not a per-cell change unless the denominator tracks cells.%s", batch_note),
-    "Alternatives: LinDA or ANCOM-BC2, ALDEx2, and Wilcoxon on CLR (`04_agreement/Q4.csv`). LEfSe is shown for comparison only (`04_agreement/Q4_describe_only.csv`, F1); it is known to give many false positives.",
+    sprintf("No differential-abundance method is best on all data (Nearing 2022; Wirbel 2024), which is why the alternatives are shown. A per-denominator fold change is not a per-cell change unless the denominator tracks cells. The residual checks miss many features with extra zeros: in a rare feature, extra zeros look like the zeros the model already expects (in a test with 20 subjects per group they caught 6 of 15), so a feature that passed its checks can still have more zeros than modelled.%s", batch_note),
+    if (isTRUE(res$long)) sprintf("Because the same subjects were sampled over time, the default is a mixed model with subject as a random effect, set up so each timepoint's group difference is its own estimate. Alternatives: Wilcoxon on CLR within each timepoint, and GEE (L03), which runs only with at least %d subjects (here %d) (`04_agreement/Q4.csv`). LEfSe is shown for comparison only (`04_agreement/Q4_describe_only.csv`, F1); it is known to give many false positives.",
+                                   rule("R-GEE"), length(unique(stats::na.omit(des$study[[des$subject]]))))
+    else "Alternatives: LinDA or ANCOM-BC2, ALDEx2, and Wilcoxon on CLR (`04_agreement/Q4.csv`). LEfSe is shown for comparison only (`04_agreement/Q4_describe_only.csv`, F1); it is known to give many false positives.",
     "03_results/Q4_differential/results.csv", "04_agreement/Q4.csv")
   if (!is.null(res$override$calibration)) add("The full simulation check: every eligible method's false discovery rate and power on the simulated data sets (half with no planted difference, half with 10% of features planted at fold change 2), whatever the decision (`02_method_choice/simulation/calibration.csv`):", "",
                                               md_table(res$override$calibration, c("contrast", "timepoint", "block", "n_reference", "method_id", "datasets", "failed_fits", "fdr", "power")), "")
@@ -162,6 +165,23 @@ write_report <- function(out, ctx) {
     "Sets come from the annotation the pipeline supplied; a set defined by the result itself would be circular.",
     "Alternative: camera (E03) on CLR values, which allows for correlation between features.", "03_results/Q7_sets/results.csv", "04_agreement/Q7.csv")
 
+  add("## 13. Q6. How does it change over time?", "")
+  q6 <- res$q6
+  if (is.null(q6)) add(sprintf("Not testable: %s.", des$long_reason %||% "the design is not longitudinal"), "")
+  else {
+    five("Within each group, how do diversity, each feature, and the whole community change from the first timepoint to each later one?",
+         "The same mixed models as Q2 and Q4, parameterised so each group's change from the first timepoint is its own coefficient (subject as a random effect, so each subject is compared with itself); for the whole community, PERMANOVA with permutations restricted within subject.",
+         "As for Q2 and Q4: the same residual checks and fallback ladder (rank-based or paired permutation tests when a check fails).",
+         "Change is measured against the first timepoint only; a change that comes and goes between later timepoints is not tested here. Subjects missing a timepoint drop out of the paired alternatives.",
+         paste("Alternatives: paired Wilcoxon tests (and a GAMM time trend for diversity when there are 4 or more timepoints).", agree_summary(rbind(q6$alpha[, c("agreement_label"), drop = FALSE], q6$features[, c("agreement_label"), drop = FALSE]))))
+    for (nm in c("alpha", "features", "composition")) {
+      r <- q6[[nm]]; if (is.null(r) || !nrow(r)) next
+      r$tested <- 1L; r$leads <- as.integer(r$status == "lead")
+      add(sprintf("%s (`03_results/Q6_change/%s.csv`):", c(alpha = "Diversity", features = "Features", composition = "Whole community")[[nm]], nm), "",
+          md_table(stats::aggregate(cbind(tested, leads) ~ layer + predictor + group + change + block, data = r, FUN = sum)), "")
+    }
+  }
+
   idx <- ctx$figures
   if (nrow(idx)) {
     add("## Figures", "", "Each drawn only from the CSV it names.", "")
@@ -172,7 +192,7 @@ write_report <- function(out, ctx) {
     }
   }
 
-  add("## 13. What was not found", "", "Placed before the leads on purpose: negative results are results.", "")
+  add("## 14. What was not found", "", "Placed before the leads on purpose: negative results are results.", "")
   ne <- leads[leads$status == "no_evidence", , drop = FALSE]
   if (nrow(ne)) {
     ne$results <- 1L
@@ -185,7 +205,7 @@ write_report <- function(out, ctx) {
   nt <- leads[leads$status %in% c("not_testable", "not_asked"), , drop = FALSE]
   add("Questions not asked, or not testable, and why:", "", sprintf("- %s (%s) %s: %s", nt$question, QUESTIONS[nt$question], gsub("_", " ", nt$status), nt$caveats), "")
 
-  add("## 14. Leads", "", sprintf("All %d rows, ranked by tier, then by effect size relative to its interval (`05_leads/leads.csv`). No row is hidden.", nrow(leads)), "",
+  add("## 15. Leads", "", sprintf("All %d rows, ranked by tier, then by effect size relative to its interval (`05_leads/leads.csv`). No row is hidden.", nrow(leads)), "",
       md_table(leads, c("rank", "tier", "status", "question", "layer", "feature", "contrast", "timepoint", "effect", "q", "agreement_label", "flags")), "")
   add("## Provenance", "", "R and package versions: `provenance/session_info.txt`. Engine, rules and seed: `provenance/engine.yaml`. Input checksums: `provenance/inputs.sha256`.")
 

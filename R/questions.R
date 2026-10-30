@@ -26,23 +26,29 @@ q0_contaminants <- function(layers, des) {
 # distance, always with betadisper. When spread differs and groups are
 # unbalanced, location and spread cannot be separated, and mvabund is the
 # primary (design section 6).
-q3_composition <- function(units, layers) {
+q3_composition <- function(units, layers, des = NULL) {
   res <- list(); agr <- list(); ord <- list(); notes <- list()
   for (i in seq_along(units)) {
     u <- units[[i]]; key <- unit_key(u); L <- layers[[u$layer]]
     if (L$spec$unit != "count") { notes[[i]] <- cbind(key, reason = sprintf("Q3 for unit %s is built at milestone E8", L$spec$unit)); next }
     if (!u$testable) { notes[[i]] <- cbind(key, reason = u$reason); next }
-    ud <- unit_data(u, L); m <- ud$m[, colSums(ud$m) > 0, drop = FALSE]; g <- ud$g
+    ud <- unit_data(u, L, des); m <- ud$m[, colSums(ud$m) > 0, drop = FALSE]; g <- ud$g
+    dat <- if (is.null(ud$cov)) data.frame(g = g) else data.frame(ud$cov, g = g)
+    fml <- function(lhs) stats::as.formula(paste(lhs, "~", cov_terms(ud$cov), "g"))
     d <- vegan::vegdist(m, method = "robust.aitchison")
-    set.seed(seed_for(31)); pm <- vegan::adonis2(d ~ g, data = data.frame(g = g), permutations = rule("R-PERM"))
+    # by = "margin": the g row is adjusted for the covariates (D24).
+    set.seed(seed_for(31)); pm <- vegan::adonis2(fml("d"), data = dat, permutations = rule("R-PERM"), by = "margin")
+    pm <- pm[rownames(pm) == "g", , drop = FALSE]
     bd <- vegan::betadisper(d, g)
     set.seed(seed_for(32)); bp <- vegan::permutest(bd, permutations = rule("R-PERM"))$tab[1, "Pr(>F)"]
     n <- table(g); unbalanced <- max(n) / min(n) > rule("R-UNBAL"); spread <- bp < rule("R-DIAGP")
     mv <- tryCatch({
       set.seed(seed_for(33))
-      fit <- mvabund::manyglm(mvabund::mvabund(round(m)) ~ g, family = "negative.binomial", offset = log(offset_of(ud)))
+      Y <- mvabund::mvabund(round(m)); dat2 <- dat; dat2$Y <- Y; off <- log(offset_of(ud))
+      fit <- mvabund::manyglm(fml("Y"), data = dat2, family = "negative.binomial", offset = off)
       a <- mvabund::anova.manyglm(fit, nBoot = rule("R-BOOT"), resamp = "pit.trap", test = "LR", show.time = "none")
-      c(stat = a$table[2, "Dev"], p = a$table[2, "Pr(>Dev)"])
+      k <- nrow(a$table)   # g is the last term, so its row is adjusted for the covariates
+      c(stat = a$table[k, "Dev"], p = a$table[k, "Pr(>Dev)"])
     }, error = function(e) c(stat = NA, p = NA))
     primary_mv <- spread && unbalanced
     res[[i]] <- cbind(key, permanova_r2 = pm$R2[1], permanova_F = pm$F[1], permanova_p = pm[["Pr(>F)"]][1],
@@ -53,10 +59,11 @@ q3_composition <- function(units, layers) {
                       p = if (primary_mv) mv[["p"]] else pm[["Pr(>F)"]][1], effect = if (primary_mv) mv[["stat"]] else pm$R2[1],
                       effect_unit = if (primary_mv) "mvabund likelihood-ratio deviance" else "PERMANOVA R-squared",
                       caveat = if (primary_mv) sprintf("location and spread cannot be separated (betadisper differs and groups are unbalanced), so mvabund is the primary; betadisper fires by chance in about %.0f%% of comparisons whose spread is really equal, so this is a precaution, not proof that spread differs", 100 * rule("R-DIAGP")) else "",
-                      n_reference = length(u$ref_samples), n_level = length(u$level_samples))
+                      n_reference = length(u$ref_samples), n_level = length(u$level_samples), adjusted_for = ud$adjusted_for)
     # Agreement: Bray-Curtis on rarefied counts (C12), mvabund. Describe only: ANOSIM, SIMPER.
     set.seed(seed_for(34)); rr <- vegan::rrarefy(round(m), min(rowSums(round(m))))
-    set.seed(seed_for(35)); bc <- vegan::adonis2(vegan::vegdist(rr, "bray") ~ g, data = data.frame(g = g), permutations = rule("R-PERM"))
+    dbc <- vegan::vegdist(rr, "bray")
+    set.seed(seed_for(35)); bc <- vegan::adonis2(fml("dbc"), data = dat, permutations = rule("R-PERM"), by = "margin"); bc <- bc[rownames(bc) == "g", , drop = FALSE]
     set.seed(seed_for(36)); an <- vegan::anosim(d, g, permutations = rule("R-PERM"))
     sp <- summary(vegan::simper(m, g, permutations = 0))[[1]]
     agr[[i]] <- rbind(cbind(key, method_id = "B01", role = "agreement", stat = bc$R2[1], p = bc[["Pr(>F)"]][1], note = "Bray-Curtis on rarefied counts"),
@@ -80,35 +87,38 @@ q3_composition <- function(units, layers) {
 # Q5: which features differ in presence? Logistic regression per feature;
 # Firth where separation occurs (a group all present or all absent). Fisher's
 # exact test is the agreement method.
-q5_presence <- function(units, layers) {
+q5_presence <- function(units, layers, des = NULL) {
   res <- list(); agr <- list(); notes <- list()
   for (i in seq_along(units)) {
     u <- units[[i]]; key <- unit_key(u); L <- layers[[u$layer]]
     if (L$spec$unit != "count") { notes[[i]] <- cbind(key, reason = sprintf("Q5 for unit %s is built at milestone E8", L$spec$unit)); next }
     if (!u$testable) { notes[[i]] <- cbind(key, reason = u$reason); next }
-    ud <- unit_data(u, L); g <- ud$g
+    ud <- unit_data(u, L, des); g <- ud$g
     feats <- prevalent(ud$m, g)
     pres <- ud$m[, feats, drop = FALSE] > 0
     vary <- feats[colSums(pres) > 0 & colSums(pres) < nrow(pres)]
     if (!length(vary)) { notes[[i]] <- cbind(key, reason = "no feature varies in presence (each is present in every sample or in none)"); next }
     r <- do.call(rbind, lapply(vary, function(f) {
-      y <- as.integer(pres[, f]); tab <- table(g, y)
+      y <- as.integer(pres[, f])
+      dat <- if (is.null(ud$cov)) data.frame(y = y, g = g) else data.frame(y = y, ud$cov, g = g)
+      fml <- stats::as.formula(paste("y ~", cov_terms(ud$cov), "g"))
       sep <- any(tapply(y, g, function(z) all(z == 0) || all(z == 1)))
       if (sep) {
-        fit <- logistf::logistf(y ~ g, data = data.frame(y = y, g = g), plconf = 2)
-        data.frame(feature = f, effect = unname(fit$coefficients[2]), ci_low = unname(fit$ci.lower[2]), ci_high = unname(fit$ci.upper[2]),
-                   p = unname(fit$prob[2]), method_id = "G06", method_role = "default (Firth: separation)", caveat = "separation: a group is all present or all absent, so Firth's correction was used")
+        k <- which(colnames(stats::model.matrix(fml, dat)) == paste0("g", levels(g)[2]))
+        fit <- logistf::logistf(fml, data = dat, plconf = k)
+        data.frame(feature = f, effect = unname(fit$coefficients[k]), ci_low = unname(fit$ci.lower[k]), ci_high = unname(fit$ci.upper[k]),
+                   p = unname(fit$prob[k]), method_id = "G06", method_role = "default (Firth: separation)", caveat = "separation: a group is all present or all absent, so Firth's correction was used")
       } else {
-        fit <- stats::glm(y ~ g, family = stats::binomial())
-        co <- summary(fit)$coefficients
-        data.frame(feature = f, effect = co[2, 1], ci_low = co[2, 1] - 1.96 * co[2, 2], ci_high = co[2, 1] + 1.96 * co[2, 2],
-                   p = co[2, 4], method_id = "R01", method_role = "default", caveat = "")
+        fit <- stats::glm(fml, data = dat, family = stats::binomial())
+        co <- summary(fit)$coefficients; k <- paste0("g", levels(g)[2])
+        data.frame(feature = f, effect = co[k, 1], ci_low = co[k, 1] - 1.96 * co[k, 2], ci_high = co[k, 1] + 1.96 * co[k, 2],
+                   p = co[k, 4], method_id = "R01", method_role = "default", caveat = "")
       }
     }))
     r$q <- stats::p.adjust(r$p, "BH")
     r$status <- ifelse(r$q <= rule("R-FDR"), "lead", "no_evidence")
     r$effect_unit <- "log odds ratio of presence"
-    r$n_reference <- length(u$ref_samples); r$n_level <- length(u$level_samples)
+    r$n_reference <- length(u$ref_samples); r$n_level <- length(u$level_samples); r$adjusted_for <- ud$adjusted_for
     res[[i]] <- cbind(key, r)
     fp <- vapply(vary, function(f) stats::fisher.test(table(g, factor(pres[, f], levels = c(FALSE, TRUE))))$p.value, 1)
     fd <- vapply(vary, function(f) sign(mean(pres[g == levels(g)[2], f]) - mean(pres[g == levels(g)[1], f])), 1)
@@ -137,11 +147,11 @@ q7_sets <- function(for_q7, layers) {
       r$q <- stats::p.adjust(r$p, "BH")
       r$status <- ifelse(r$q <= rule("R-FDR"), "lead", "no_evidence")
       r$effect_unit <- "normalised enrichment score"
-      r$n_reference <- length(u$ref_samples); r$n_level <- length(u$level_samples)
+      r$n_reference <- length(u$ref_samples); r$n_level <- length(u$level_samples); r$adjusted_for <- x$ud$adjusted_for
       res[[length(res) + 1]] <- cbind(key, r)
       z <- t(clr(x$ud$m)[, x$feats, drop = FALSE])
       idx <- lapply(sets, function(s) which(rownames(z) %in% s))
-      cm <- limma::camera(z, idx, design = stats::model.matrix(~ x$ud$g))
+      cm <- limma::camera(z, idx, design = if (is.null(x$ud$cov)) stats::model.matrix(~ x$ud$g) else stats::model.matrix(stats::as.formula(paste("~", cov_terms(x$ud$cov), "g")), data.frame(x$ud$cov, g = x$ud$g)))
       cm <- cm[names(sets), , drop = FALSE]
       cq <- stats::p.adjust(cm$PValue, "BH")
       agr[[length(agr) + 1]] <- cbind(key, set_column = sc, feature = rownames(cm), method_id = "E03", effect = ifelse(cm$Direction == "Up", 1, -1),
@@ -154,11 +164,11 @@ q7_sets <- function(for_q7, layers) {
 # Q2 agreement set (design C12): plug-in Hill numbers on rarefied counts, and
 # DivNet (Shannon and Simpson, F3, pinned). Each compared with its own test;
 # directions are on the Hill scale (higher = more diverse).
-q2_agreement <- function(units, layers) {
+q2_agreement <- function(units, layers, des = NULL) {
   out <- list()
   for (u in units) {
     if (!u$testable || layers[[u$layer]]$spec$unit != "count") next
-    key <- unit_key(u); ud <- unit_data(u, layers[[u$layer]]); m <- round(ud$m); g <- ud$g; a <- g == levels(g)[1]
+    key <- unit_key(u); ud <- unit_data(u, layers[[u$layer]], des); m <- round(ud$m); g <- ud$g; a <- g == levels(g)[1]
     m <- m[rowSums(m) > 0, , drop = FALSE]; g <- g[rownames(ud$m) %in% rownames(m)]; a <- g == levels(g)[1]
     set.seed(seed_for(21)); rr <- vegan::rrarefy(m, min(rowSums(m)))
     h <- cbind(`0` = rowSums(rr > 0), `1` = exp(vegan::diversity(rr, "shannon")), `2` = vegan::diversity(rr, "invsimpson"))

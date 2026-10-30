@@ -35,16 +35,18 @@ contrast_units <- function(layers, des, cells) {
 
 # The unit's counts (samples x features, reference samples first), its group
 # factor (reference first) and its denominator (or library size if none).
-unit_data <- function(u, layer) {
+unit_data <- function(u, layer, des = NULL) {
   s <- c(u$ref_samples, u$level_samples)
   m <- wide(layer, s)[s, , drop = FALSE]
   g <- factor(rep(c(u$reference, u$level), c(length(u$ref_samples), length(u$level_samples))), levels = c(u$reference, u$level))
+  # Covariates for this comparison (CLAUDE.md D24); none when des is not given.
+  adj <- if (is.null(des)) list(cov = NULL, adjusted_for = "not adjusted") else adjustment_for(s, des, u$predictor, stats::model.matrix(~ g))
   den <- NULL
   if (!is.null(layer$denominators)) {
     col <- names(layer$spec$denominators$columns)[1]
     den <- as.numeric(layer$denominators[[col]][match(s, layer$denominators$sample)])
   }
-  list(m = m, g = g, den = den, lib = rowSums(m), samples = s)
+  list(m = m, g = g, den = den, lib = rowSums(m), samples = s, cov = adj$cov, adjusted_for = adj$adjusted_for)
 }
 
 # Features kept for per-feature tests: present in at least R-PREV of the

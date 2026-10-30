@@ -19,6 +19,7 @@ hill_at_equal_coverage <- function(m) {
 }
 
 q2_alpha <- function(layers, des, cells) {
+  # (D24) each comparison adjusted for batch and the other predictors where the safeguard allows.
   st <- des$study; per_sample <- list(); res <- list(); diag <- list(); skipped <- list()
   for (nm in names(layers)) {
     L <- layers[[nm]]
@@ -53,18 +54,30 @@ q2_alpha <- function(layers, des, cells) {
                             q_order = qq, n_reference = length(a), n_level = length(b),
                             mean_reference = if (length(a)) mean(a) else NA, mean_level = if (length(b)) mean(b) else NA,
                             effect = NA_real_, ci_low = NA_real_, ci_high = NA_real_, p = NA_real_, status = NA_character_, reason = NA_character_,
-                            method_id = "A02", method_role = "default", caveat = "")
+                            method_id = "A02", method_role = "default", caveat = "", adjusted_for = "not adjusted")
             if (paired_cell) {
               r$status <- "not_testable"; r$reason <- "a subject has more than one sample in this timepoint and block; the paired model is built at milestone E5"
             } else if (length(a) < rule("R-MINGRP") || length(b) < rule("R-MINGRP")) {
               r$status <- "not_testable"; r$reason <- sprintf("a group has fewer than %d samples (rule R-MINGRP)", rule("R-MINGRP"))
             } else {
               r$effect <- mean(b) - mean(a)
-              tt <- tryCatch(stats::t.test(b, a, var.equal = FALSE), error = function(e) NULL)
-              if (is.null(tt)) {
-                # Both groups constant: no variation to test against.
-                if (r$effect == 0) { r$p <- 1; r$ci_low <- 0; r$ci_high <- 0 } else { r$status <- "not_testable"; r$reason <- "no variation within either group" }
-              } else { r$p <- tt$p.value; r$ci_low <- tt$conf.int[1]; r$ci_high <- tt$conf.int[2] }
+              # Adjusted for batch and the other predictors (D24) when any apply:
+              # a linear model; otherwise Welch's test.
+              sa <- d$sample[d[[p]] == ref & d$q_order == qq]; sb <- d$sample[d[[p]] == lvl & d$q_order == qq]
+              gg <- factor(rep(c(ref, lvl), c(length(sa), length(sb))), levels = c(ref, lvl))
+              adj <- adjustment_for(c(sa, sb), des, p, stats::model.matrix(~ gg))
+              r$adjusted_for <- adj$adjusted_for
+              if (!is.null(adj$cov)) {
+                fit <- stats::lm(stats::as.formula(paste("h ~", cov_terms(adj$cov), "gg")), data.frame(h = c(a, b), adj$cov, gg = gg))
+                co <- summary(fit)$coefficients; k <- paste0("gg", lvl); ci <- stats::confint(fit)[k, ]
+                r$effect <- co[k, 1]; r$p <- co[k, 4]; r$ci_low <- ci[1]; r$ci_high <- ci[2]; r$method_id <- "A02lm"
+              } else {
+                tt <- tryCatch(stats::t.test(b, a, var.equal = FALSE), error = function(e) NULL)
+                if (is.null(tt)) {
+                  # Both groups constant: no variation to test against.
+                  if (r$effect == 0) { r$p <- 1; r$ci_low <- 0; r$ci_high <- 0 } else { r$status <- "not_testable"; r$reason <- "no variation within either group" }
+                } else { r$p <- tt$p.value; r$ci_low <- tt$conf.int[1]; r$ci_high <- tt$conf.int[2] }
+              }
             }
             rows[[length(rows) + 1]] <- r
             # Residual checks (design section 6): Welch's test already allows

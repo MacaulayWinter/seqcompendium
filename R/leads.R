@@ -25,7 +25,7 @@ unbuilt_rows <- function(layers, des, built = c("Q0", "Q3", "Q4", "Q5", "Q7")) {
   neg <- any(grepl("^negative_", des$controls$kind))
   plan <- list(
     Q0 = if (!neg) c("not_testable", "no negative control samples, so contaminants cannot be checked"),
-    Q6 = if (des$class == "longitudinal") c("not_asked", "change over time is built at milestone E5") else c("not_testable", "the design is not longitudinal (no subject sampled at two or more times)"),
+    Q6 = if (!is.null(des$long_reason)) c("not_testable", des$long_reason),
     Q8 = if ("presence" %in% units && has_tree) c("not_asked", "phylogeny-aware association is built at milestone E9") else c("not_testable", "needs a presence/absence layer with a tree (shape S3); this bundle has none"),
     Q9 = c("not_testable", "needs pairwise data (shape S5); this bundle has none"),
     Q10 = if (has_pair) c("not_asked", "paired RNA/DNA activity is built at milestone E8") else c("not_testable", "needs paired RNA and DNA layers (shape S4); this bundle has none"),
@@ -35,8 +35,10 @@ unbuilt_rows <- function(layers, des, built = c("Q0", "Q3", "Q4", "Q5", "Q7")) {
                                                           feature = "all", caveats = plan[[Q]][2])))
 }
 
-METHOD_NAMES <- c(A02 = "Hill numbers at equal sample coverage (iNEXT), Welch t-test", D01 = "DESeq2, denominator as offset", D09 = "LinDA", D06 = "ANCOM-BC2", D04 = "ALDEx2",
-                  R02 = "zero-inflated negative binomial", K02 = "Wilcoxon rank-sum test on the Hill numbers", K04 = "permutation test on CLR", K01 = "Welch t-test on CLR", D17 = "Wilcoxon on CLR",
+METHOD_NAMES <- c(A02 = "Hill numbers at equal sample coverage (iNEXT), Welch t-test", A02lm = "Hill numbers at equal sample coverage (iNEXT), linear model with covariates", D01 = "DESeq2, denominator as offset", D09 = "LinDA", D06 = "ANCOM-BC2", D04 = "ALDEx2",
+                  R02 = "zero-inflated negative binomial", L01 = "linear mixed model (subject random effect)", L02 = "negative binomial mixed model, denominator as offset",
+                  D09re = "LinDA with a subject random effect", R02mm = "zero-inflated negative binomial mixed model", K02p = "paired Wilcoxon test",
+                  K01p = "paired t-test on CLR", K04p = "paired sign-flip permutation on CLR", B06s = "PERMANOVA with permutations within subject", K02 = "Wilcoxon rank-sum test on the Hill numbers", K04 = "permutation test on CLR", K01 = "Welch t-test on CLR", D17 = "Wilcoxon on CLR",
                   R01 = "logistic regression", G06 = "Firth logistic regression", E02 = "pre-ranked fgsea", N11 = "decontam (prevalence)",
                   `B06 PERMANOVA` = "PERMANOVA on robust Aitchison distance, with betadisper", `B14 mvabund` = "mvabund (negative binomial), betadisper differs")
 
@@ -65,7 +67,7 @@ as_leads <- function(r, Q, feature_col, base_caveats, contaminants, result_file,
       caveats = paste(c(if (!tested) x$reason, if (nzchar(x$caveat %||% "")) x$caveat,
                         if (contam) "possible contaminant (Q0): flagged, not removed; cannot reach tier 1",
                         if (x$status == "lead") "tier 2 at most: no lead reaches tier 1 until leave-one-out exists (E6)",
-                        if (tested) base_caveats), collapse = "; "),
+                        if (tested) base_caveats, if (tested && !is.null(x$adjusted_for)) sprintf("adjusted for: %s", x$adjusted_for)), collapse = "; "),
       flags = if (contam) "possible_contaminant" else NA,
       result_file = result_file)
   }))
@@ -84,8 +86,6 @@ build_leads <- function(res, layers, des) {
   rows <- list(lead_row(lead_id = "Q1-all", status = "described", question = "Q1", layer = paste(names(layers), collapse = "; "), feature = "all",
                         caveats = "description only, not a test", result_file = "03_results/Q1_describe/results.csv"))
   base_caveats <- c("leave-one-out not run yet (E6)",
-                    if (length(des$batch)) sprintf("batch %s not adjusted for yet (milestone E5, with the other covariates)", q(des$batch)),
-                    if (length(des$grouping) > 1) "each predictor is compared on its own, not adjusted for the others (E5)",
                     if (!any(grepl("^negative_", des$controls$kind))) "no negative controls, so contaminants could not be checked")
   if (!is.null(res$q0)) for (nm in unique(res$q0$layer)) {
     x <- res$q0[res$q0$layer == nm, ]
@@ -102,7 +102,8 @@ build_leads <- function(res, layers, des) {
     list(as_leads(res$q4$results, "Q4", "feature", base_caveats, res$q0, "03_results/Q4_differential/results.csv", des), skipped_rows(res$q4$skipped, "Q4")),
     list(as_leads(res$q5$results, "Q5", "feature", base_caveats, res$q0, "03_results/Q5_presence/results.csv", des), skipped_rows(res$q5$skipped, "Q5")),
     list(as_leads(res$q7$results, "Q7", "feature", base_caveats, NULL, "03_results/Q7_sets/results.csv", des), skipped_rows(res$q7$skipped, "Q7")))
-  for (Q in c("Q2", "Q3", "Q4", "Q5", "Q7")) {
+  if (!is.null(res$q6)) rows <- c(rows, list(q6_leads(res$q6, base_caveats)))
+  for (Q in c("Q2", "Q3", "Q4", "Q5", "Q7", if (is.null(des$long_reason)) "Q6")) {
     have <- any(vapply(Filter(Negate(is.null), rows), function(r) any(r$question == Q), TRUE))
     if (!have) rows[[length(rows) + 1]] <- lead_row(lead_id = sprintf("%s-all", Q), status = "not_testable", question = Q, layer = "all", feature = "all",
                                                     caveats = if (!length(des$grouping)) "no grouping predictor declared in the column guide" else "nothing to test in this bundle")
@@ -116,4 +117,29 @@ build_leads <- function(res, layers, des) {
   leads$rank <- ifelse(is.na(leads$tier), NA_integer_, cumsum(!is.na(leads$tier)))
   rownames(leads) <- NULL
   leads[, LEAD_COLS]
+}
+
+# Q6 (change over time within each group): alpha, features, composition.
+q6_leads <- function(q6, base_caveats) {
+  one <- function(r, kind, file) {
+    if (is.null(r) || !nrow(r)) return(NULL)
+    do.call(rbind, lapply(seq_len(nrow(r)), function(i) {
+      x <- r[i, ]
+      feat <- switch(kind, alpha = sprintf("whole community, Hill q = %d", x$q_order), features = x$feature, composition = "whole community composition")
+      tested <- x$status %in% c("lead", "no_evidence")
+      lead_row(lead_id = gsub("[^A-Za-z0-9=.-]+", "_", sprintf("Q6-%s-%s-%s-%s-%s-%s", x$layer, x$predictor, x$group, x$change, x$block, feat)),
+               tier = if (x$status == "lead") 2L else if (x$status == "no_evidence") 4L else NA_integer_, status = x$status, question = "Q6",
+               layer = x$layer, feature = feat, contrast = sprintf("%s = %s: %s", x$predictor, x$group, x$change), timepoint = x$change, block = x$block,
+               effect = x$effect, effect_unit = x$effect_unit %||% "change in Hill number", ci_low = x$ci_low %||% NA, ci_high = x$ci_high %||% NA,
+               p = x$p, q = x$q, p_floor = NA, n_per_group = sprintf("%d subjects", x$n_subjects %||% NA_integer_),
+               method = unname(METHOD_NAMES[x$method_id]) %||% x$method_id, method_role = x$method_role %||% "default",
+               agreement = x$agreement %||% "0/0", agreement_label = x$agreement_label %||% "not testable", loo_stable = "not run (milestone E6)",
+               min_detectable_effect = "not run (simulation: E4)",
+               caveats = paste(c(if (nzchar(x$caveat %||% "")) x$caveat, if (x$status == "lead") "tier 2 at most: no lead reaches tier 1 until leave-one-out exists (E6)",
+                                 if (tested) base_caveats, sprintf("adjusted for: %s", x$adjusted_for %||% "nothing")), collapse = "; "),
+               result_file = file)
+    }))
+  }
+  rbind(one(q6$alpha, "alpha", "03_results/Q6_change/alpha.csv"), one(q6$features, "features", "03_results/Q6_change/features.csv"),
+        one(q6$composition, "composition", "03_results/Q6_change/composition.csv"))
 }

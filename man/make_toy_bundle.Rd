@@ -8,7 +8,8 @@ make_toy_bundle(
   dir,
   variant = c("main", "no_controls", "copy_null", "planted", "planted_da", "spread",
     "zeroinfl_few", "zeroinfl_many", "presence", "no_denominator", "proportions",
-    "calib", "calib_mocks6"),
+    "calib", "calib_mocks6", "long_planted", "long_div", "few_subjects", "long40",
+    "long4tp", "long_zeroinfl", "adjust", "confounded_batch"),
   seed = 20261029L
 )
 }
@@ -30,6 +31,16 @@ layer as proportions, unit proportion); "calib" (20 subjects, 10 per
 group, one timepoint, 2 mocks with a known composition: enough reference
 samples for the override rule's simulation, E4) and "calib_mocks6" (the
 same with 6 mocks, so the shuffled-label mock test can run).
+E5 (longitudinal; the same subjects at every timepoint): "long_planted"
+(toyG06-08 at 8 times the mean in treated samples at T1 only),
+"long_div" (treated samples' reads concentrated in 3 features at T1 only),
+"few_subjects" (2 subjects per group), "long40" (20 subjects per group),
+"long4tp" (4 timepoints), "long_zeroinfl" (40 subjects; 15 features with extra
+structural zeros; 50 percent in "long_zeroinfl"). E5 (adjustment, one timepoint, 20 subjects): "adjust"
+(a second predictor `diet`, unbalanced across groups, carries the planted
+effect on toyG06-08) and "confounded_batch" (batch identical to group).
+"main" and "no_controls" are longitudinal too; every other variant gives
+each sample its own subject, so it is a snapshot design.
 In every variant with controls, toyG26-30 are contaminants: common in the
 blanks, rare in study samples.}
 

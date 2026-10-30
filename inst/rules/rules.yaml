@@ -29,3 +29,4 @@ rules:
   R-EXCESS: {value: 0.05, reason: "A whole comparison moves down the fallback ladder when a one-sided binomial test says more features failed their checks than chance would give, at this p-value (CLAUDE.md D17)", source: "user decision, 2026-10-29"}
   R-CHANCEREP: {value: 20, reason: "Clean data sets simulated per comparison to measure how often its residual checks fail by chance (CLAUDE.md D21)", source: "engine convention"}
   R-SPP:    {value: 5,    reason: "Fewest samples per fixed-effect parameter before adjustment terms are dropped (batch only, then none; CLAUDE.md D24)", source: "rule of thumb, unverified"}
+  R-CHANCEFEAT: {value: 50, reason: "Most features simulated when measuring the mixed model checks' chance failure rate (a mixed model per feature is slow; CLAUDE.md D26)", source: "engine convention"}

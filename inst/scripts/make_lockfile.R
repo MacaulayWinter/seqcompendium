@@ -14,7 +14,7 @@ repos <- c(CRAN = sprintf("https://p3m.dev/cran/__linux__/noble/%s", SNAPSHOT),
 options(repos = repos, Ncpus = 4)
 pkgs <- c(
   # CRAN
-  "yaml", "iNEXT", "ggplot2", "digest", "vegan", "MicrobiomeStat", "mvabund", "logistf", "DHARMa", "MASS", "pscl", "MIDASim",
+  "yaml", "iNEXT", "ggplot2", "digest", "vegan", "MicrobiomeStat", "mvabund", "logistf", "DHARMa", "MASS", "pscl", "MIDASim", "glmmTMB", "geepack", "lme4", "lmerTest",
   "rmarkdown", "testthat", "pkgload", "remotes", "renv",
   # Bioconductor 3.23
   "DESeq2", "ANCOMBC", "microbiome", "ALDEx2", "decontam", "fgsea", "limma", "lefser", "SummarizedExperiment", "TreeSummarizedExperiment")

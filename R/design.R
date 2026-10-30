@@ -28,6 +28,7 @@ read_design <- function(md, guide, info) {
   }
   class <- if (long) "longitudinal" else if (repeated_within_time) "snapshot-paired" else "snapshot-independent"
   list(controls = controls, study = study, grouping = grouping, continuous = setdiff(pred, grouping), levels_of = levels_of,
+       types = stats::setNames(as.list(info$type), info$column),
        subject = subj, time = tim, time_order = time_order, block = blk, batch = bat, outcome = role_of("outcome"),
        ctl_column = ctl, class = class)
 }

@@ -159,3 +159,16 @@ run_override <- function(units, layers, choices, considered, des, bundle_dir) {
   bind <- function(l) { l <- Filter(Negate(is.null), l); if (length(l)) do.call(rbind, l) else NULL }
   list(decisions = bind(dec), calibration = bind(cal), per_rep = bind(reps), mock = mk)
 }
+
+# In a longitudinal design the Q4 default is a mixed model (E5), which the
+# simulation does not cover: the check is reported as not run, with the
+# reason (CLAUDE.md D26). The mock check still runs.
+long_override_note <- function(units, layers, choices, des, bundle_dir, considered) {
+  mk <- mock_check(layers, des, bundle_dir, Q4_CANDIDATES)
+  dec <- do.call(rbind, lapply(Filter(function(u) u$testable, units), function(u) {
+    L <- layers[[u$layer]]; final <- if (is.null(L$spec$denominators)) "D09re" else "L02"
+    cbind(unit_key(u), default_id = final, final_id = final, decision = "not run: longitudinal design (the simulation check covers the per-timepoint methods; the mixed models are validated at E7)",
+          n_reference = length(u$ref_samples), default_fdr = NA, limit = rule("R-CAL") * rule("R-FDR"), datasets = 0, caveat = "")
+  }))
+  list(decisions = dec, calibration = NULL, per_rep = NULL, mock = mk)
+}

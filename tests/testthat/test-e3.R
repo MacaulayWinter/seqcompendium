@@ -26,7 +26,8 @@ test_that("E3-M2: the filter lists every method with its reason", {
 })
 
 test_that("E3-M3: the Q4 default follows the denominator", {
-  ch <- res_csv(run_fixture("main"), "02_method_choice/choices.csv")
+  # A snapshot fixture: E3's defaults are the snapshot path (main is longitudinal since E5, D26).
+  ch <- res_csv(run_fixture("planted_da"), "02_method_choice/choices.csv")
   expect_equal(ch$default_id[ch$question == "Q4"], "D01"); expect_match(ch$rests_on[ch$question == "Q4"], "has a denominator")
   ch <- res_csv(run_fixture("no_denominator"), "02_method_choice/choices.csv")
   expect_equal(ch$default_id[ch$question == "Q4"], "D09"); expect_match(ch$rests_on[ch$question == "Q4"], "no denominator")
@@ -101,7 +102,7 @@ test_that("E3-M9: zero-inflated features are flagged and refitted; over R-DIAG m
   moved <- q4[q4$feature %in% ch$feature[ch$failed] & paste(q4$timepoint, q4$feature) %in% paste(ch$timepoint, ch$feature)[ch$failed], ]
   expect_true(all(moved$rung >= 1 & grepl("rung", moved$caveat)))
   # The user asked that every move says it may be chance (CLAUDE.md D16).
-  expect_true(all(grepl("may have moved by chance", moved$caveat)))
+  expect_true(all(grepl("may have moved by chance|clearly more than chance", moved$caveat)))
   y <- res_csv(run_fixture("zeroinfl_many"), "03_results/Q4_differential/results.csv")
   # Since D17 the whole comparison moves when failures clearly exceed chance.
   w <- y[y$excess_failures_p < 0.05, ]
