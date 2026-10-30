@@ -138,22 +138,18 @@ q4_unit <- function(u, layer, default_id) {
   }
   chk <- do.call(rbind, lapply(seq_along(feats), function(k) if (count_model) check_nb(ud, feats[k], k) else check_lm_clr(ud, feats[k])))
   share <- mean(chk$failed)
-  # How many failures chance alone would give (the user asked for this to be
-  # stated, CLAUDE.md D16). DHARMa runs 3 tests per feature at R-DIAGP, so a
-  # feature that fits well still fails at least one with probability about
-  # 1 - (1 - R-DIAGP)^3 (14% at 0.05; the tests are not fully independent, so
-  # this is approximate). LinDA's checks use fixed thresholds, not p-values,
-  # so no chance rate can be given for them.
-  chance <- if (count_model) 1 - (1 - rule("R-DIAGP"))^3 else linda_chance_rate(length(u$ref_samples), length(u$level_samples))
+  # How many failures chance alone would give (stated for the user, D16), and
+  # whether this comparison clearly exceeds it (D17). The chance rate is
+  # measured, not assumed (CLAUDE.md D21): the same checks are run on clean
+  # data simulated from this comparison's own features.
+  chance <- chance_failure_rate(ud, feats, count_model)
   # The whole comparison moves only when clearly more features failed than
   # chance would give (one-sided binomial test, R-EXCESS; CLAUDE.md D17).
   excess_p <- stats::binom.test(sum(chk$failed), length(feats), chance, alternative = "greater")$p.value
   whole <- excess_p < rule("R-EXCESS")
-  chance_note <- if (count_model) sprintf(
-    "each feature gets 3 residual checks at p < %s, so about %.0f%% of features that fit well fail at least one by chance; here %d of %d features failed (about %.1f expected by chance), so this feature may have moved by chance. Its result is still valid: it comes from a method that assumes less",
-    rule("R-DIAGP"), 100 * chance, sum(chk$failed), length(feats), chance * length(feats))
-  else sprintf("the checks use fixed thresholds (R-SKEW, R-VARRATIO), which about %.0f%% of features that fit well cross by chance at these group sizes; here %d of %d features failed (about %.1f expected by chance), so this feature may have moved by chance. Its result is still valid: it comes from a method that assumes less",
-               100 * chance, sum(chk$failed), length(feats), chance * length(feats))
+  chance_note <- sprintf(
+    "on clean data simulated from this comparison's own features, about %.1f%% of features fail these residual checks by chance; here %d of %d features failed (about %.1f expected by chance), so this feature may have moved by chance. Its result is still valid: it comes from a method that assumes less",
+    100 * chance, sum(chk$failed), length(feats), chance * length(feats))
   rung1 <- if (count_model) function(f) fit_zinb(ud, f) else function(f) fit_welch_clr(ud, f)
   rung2 <- if (count_model) function(f) fit_perm_clr(ud, f) else function(f) { r <- fit_wilcoxon_clr(ud, f); r$effect_unit <- "difference in mean CLR (Wilcoxon)"; r }
   rung1_name <- if (count_model) "zero-inflated negative binomial (R02)" else "Welch t-test on CLR"
@@ -243,14 +239,32 @@ q4_abundance <- function(units, layers, choices, decisions = NULL) {
        for_q7 = Filter(Negate(is.null), stats_for_q7))
 }
 
-# How often LinDA's fixed residual cut-offs (R-SKEW, R-VARRATIO) fail a
-# well-fitting feature by chance at these group sizes: normal residuals,
-# 2,000 seeded draws (CLAUDE.md D17).
-linda_chance_rate <- function(n1, n2) {
-  set.seed(seed_for(45))
-  mean(replicate(2000, {
-    a <- stats::rnorm(n1); b <- stats::rnorm(n2); r <- c(a - mean(a), b - mean(b))
-    sk <- mean(r^3) / stats::sd(r)^3; v <- c(stats::var(a), stats::var(b))
-    abs(sk) > rule("R-SKEW") || max(v) / min(v) > rule("R-VARRATIO")
-  }))
+# The share of features that fail their residual checks by chance alone,
+# measured on R-CHANCEREP data sets simulated from this comparison: each
+# feature negative binomial with its own mean (scaled by each sample's
+# offset) and its own dispersion (method of moments, groups pooled, so no
+# group difference), then the same checks as the real data (CLAUDE.md D21).
+chance_failure_rate <- function(ud, feats, count_model) {
+  off <- offset_of(ud); w <- off / mean(off)
+  y <- round(ud$m[, feats, drop = FALSE])
+  rate <- colMeans(y / w)
+  v <- apply(y / w, 2, stats::var)
+  size <- ifelse(v > rate, rate^2 / pmax(v - rate, 1e-8), 1e4)
+  set.seed(seed_for(46))
+  failed <- 0; total <- 0
+  for (r in seq_len(rule("R-CHANCEREP"))) {
+    sim <- vapply(seq_along(feats), function(k) stats::rnbinom(nrow(y), mu = rate[k] * w, size = size[k]), numeric(nrow(y)))
+    if (is.null(dim(sim))) sim <- matrix(sim, nrow = nrow(y))
+    colnames(sim) <- feats; rownames(sim) <- rownames(y)
+    m2 <- ud$m; m2[, feats] <- sim
+    us <- list(m = m2, g = ud$g, den = ud$den, lib = ud$lib, samples = ud$samples)
+    for (k in seq_along(feats)) {
+      if (sum(sim[, k]) == 0) next
+      f <- if (count_model) check_nb(us, feats[k], 100000 + 1000 * r + k) else check_lm_clr(us, feats[k])
+      failed <- failed + f$failed; total <- total + 1
+    }
+  }
+  if (total == 0) return(rule("R-DIAGP"))
+  # Never zero: a chance rate of 0 would make any single failure "excess".
+  max(failed / total, 1 / (total + 1))
 }
