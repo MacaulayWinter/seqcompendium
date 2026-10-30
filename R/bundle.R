@@ -39,6 +39,7 @@ read_bundle <- function(bundle) {
     f_ok <- exists_or_stop(L$file, sprintf("layer `%s`'s data file", nm))
     a_ok <- exists_or_stop(L$features, sprintf("layer `%s`'s feature table", nm))
     d_ok <- if (!is.null(L$denominators)) exists_or_stop(L$denominators$file, sprintf("layer `%s`'s denominators", nm)) else TRUE
+    if (!is.null(L$mock_composition)) exists_or_stop(L$mock_composition, sprintf("layer `%s`'s mock composition", nm))
     for (role in unlist(L$feature_columns)) stop_if(!role %in% FEATURE_ROLES, sprintf("Layer `%s`: feature-column role '%s' is not one of: %s.", nm, role, paste(FEATURE_ROLES, collapse = ", ")))
     if (f_ok && a_ok && d_ok)
       layers[[nm]] <- list(spec = L, data = read_table(path(L$file)), features = read_table(path(L$features)),
@@ -50,7 +51,7 @@ read_bundle <- function(bundle) {
   md <- md[, c("sample", setdiff(names(md), "sample")), drop = FALSE]
   guide <- if (guide_ok) read_guide(path(man$metadata$column_guide)) else NULL
   inputs <- c("manifest.yaml", man$metadata$table, if (guide_ok) man$metadata$column_guide,
-              unlist(lapply(man$layers, function(L) c(L$file, L$features, L$denominators$file))))
+              unlist(lapply(man$layers, function(L) c(L$file, L$features, L$denominators$file, L$mock_composition))))
   list(path = bundle, manifest = man, md = md, guide = guide, layers = layers, inputs = unique(inputs))
 }
 

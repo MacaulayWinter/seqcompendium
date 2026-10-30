@@ -24,7 +24,13 @@ write_report <- function(out, ctx) {
   add(if (nrow(nb)) sprintf("- **%s** (%s): %s", nb$status, nb$check, nb$message) else "- All checks passed, with no notes.", "")
 
   add("## 2. Controls", "", "Control samples are declared in the column guide (role `sample_control`). They are never analysed as biology: they are left out of every result below.", "")
-  if (nrow(ctx$controls)) add(md_table(ctx$controls), "", "Mock recovery needs the mock's known composition in the manifest; it is built at milestone E4.", "")
+  if (nrow(ctx$controls)) {
+    add(md_table(ctx$controls), "")
+    mk <- ctx$res$override$mock
+    if (!is.null(mk$note)) add(sprintf("Mock check: %s.", mk$note), "")
+    if (!is.null(mk$recovery)) add("Mock recovery (how well each mock community's known members were found; `00_input_check/mock_recovery.csv`):", "", md_table(mk$recovery), "")
+    if (!is.null(mk$test)) add("Mock test (labels shuffled among the mocks; a method that reports a difference between mock replicates cannot be chosen; `02_method_choice/simulation/mock_test.csv`):", "", md_table(mk$test), "")
+  }
   else add("No control samples.", "")
 
   add("## 3. Design as read", "", "Read only from your column guide; nothing about a column was guessed.", "", design_text(des, ctx$info), "")
@@ -32,7 +38,7 @@ write_report <- function(out, ctx) {
   add("## 4. Shape profile", "", "Every later choice points back to these rows (`01_profile/shape_profile.csv`).", "", md_table(ctx$profile), "")
 
   add("## 5. How the methods were chosen", "",
-      sprintf("The catalogue has %d methods. For this bundle %d were eligible; every one, with the reason it was or was not, is in `02_method_choice/methods_considered.csv`. Each question then uses the fixed default of the design (section 5.2) for this data shape; the facts it rests on are below. No method was chosen by looking at your data's p-values. The override rule (a check of the default on simulated data from your controls) is built at milestone E4.",
+      sprintf("The catalogue has %d methods. For this bundle %d were eligible; every one, with the reason it was or was not, is in `02_method_choice/methods_considered.csv`. Each question then uses the fixed default of the design (section 5.2) for this data shape; the facts it rests on are below. No method was chosen by looking at your data's p-values. For Q4, the default is then checked on simulated data made from your own reference samples, and replaced only if it fails that check (section 10, Q4).",
               length(unique(ctx$considered$id)), sum(ctx$considered$eligible == "yes")), "",
       md_table(ctx$choices, c("layer", "question", "default_id", "default_method", "rests_on", "default_eligible")), "")
 
@@ -93,39 +99,68 @@ write_report <- function(out, ctx) {
     add(md_table(r, c("layer", "contrast", "timepoint", "block", "group_sizes", "permanova_r2", "permanova_p", "betadisper_p", "primary", "q", "status", "agreement_label")), "")
   }
 
-  feature_block <- function(r, title, asked, why, checks, limits, alts, file) {
+  # Never silent: an alternative method that could not fit is named, with how often.
+  failed_methods <- function(f) {
+    p <- file.path(out, f); if (is.null(f) || !file.exists(p)) return("")
+    a <- utils::read.csv(p, stringsAsFactors = FALSE)
+    if (!"note" %in% names(a)) return("")
+    bad <- a[grepl("failed to fit|did not fit", a$note), ]
+    if (!nrow(bad)) return("Every alternative method ran.")
+    tb <- table(bad$method_id)
+    sprintf("**Could not fit:** %s; these are left out of the agreement counts.", paste(sprintf("%s (%d result%s)", names(tb), as.vector(tb), ifelse(tb == 1, "", "s")), collapse = ", "))
+  }
+  feature_block <- function(r, title, asked, why, checks, limits, alts, file, agr_file = NULL) {
     add(title, "")
     if (is.null(r)) { add("Could not be asked: see the leads table for the reason.", ""); return(invisible()) }
-    five(asked, why, checks, limits, paste(alts, agree_summary(r)))
+    five(asked, why, checks, limits, paste(alts, agree_summary(r), failed_methods(agr_file)))
     r$tested <- 1L; r$leads <- as.integer(r$status == "lead")
     s <- stats::aggregate(cbind(tested, leads) ~ layer + contrast + timepoint + block, data = r, FUN = sum)
     add(md_table(s), "", sprintf("Every feature, with its method, rung, effect, q and agreement: `%s`. The leads are in the leads table.", file), "")
   }
   r4 <- res$q4$results
+  # The range the residual checks and the chance rule were tested on (D17's
+  # grid; CLAUDE.md D22). A comparison outside it is flagged, not refused.
+  feature_range_note <- function(r) {
+    n <- stats::aggregate(feature ~ layer + contrast + timepoint + block, data = r, FUN = length)
+    out <- n[n$feature < 30 | n$feature > 300, ]
+    sprintf("The residual checks and the rule for moving a whole comparison were tested on 30 to 300 features per comparison; this bundle has %d to %d.%s",
+            min(n$feature), max(n$feature),
+            if (nrow(out)) sprintf(" **%d comparison(s) are outside that range, so how often their checks move by chance has not been tested.**", nrow(out)) else "")
+  }
+  dec <- res$override$decisions
+  sim_sentence <- if (is.null(dec)) "" else paste(vapply(seq_len(nrow(dec)), function(i) { d <- dec[i, ]
+    where <- sprintf("For %s at timepoint %s, block %s", d$contrast, d$timepoint, d$block)
+    if (d$datasets == 0) sprintf("%s: the default method could not be checked on simulated data from your controls, because the control group has n = %d (fewer than %d). The default was kept on the strength of published benchmarks only.", where, d$n_reference, rule("R-MINSIM"))
+    else if (d$decision == "kept") sprintf("%s: on %d simulated data sets made from your %d control samples, this method's false discovery rate was %.2f (limit %.2f), so the default was kept.", where, d$datasets, d$n_reference, d$default_fdr, d$limit)
+    else if (d$decision == "switched") sprintf("%s: on %d simulated data sets made from your %d control samples, the default's false discovery rate was %.2f (limit %.2f), so the engine switched to %s, the first method in the pre-written priority order that passed.", where, d$datasets, d$n_reference, d$default_fdr, d$limit, METHOD_NAMES[[d$final_id]])
+    else sprintf("%s: on %d simulated data sets made from your %d control samples, no method's false discovery rate was within the limit (%.2f), so the default was kept and every result carries that caveat.", where, d$datasets, d$n_reference, d$limit)
+  }, ""), collapse = " ")
   feature_block(r4, "## 10. Q4. Which features differ in abundance?",
     "Which features are more or less abundant in each level than in the reference, within each timepoint and block?",
-    sprintf("%s. Features present in at least %.0f%% of one group's samples are tested (R-PREV); q-values are Benjamini-Hochberg within each comparison.",
+    sprintf("%s. Features present in at least %.0f%% of one group's samples are tested (R-PREV); q-values are Benjamini-Hochberg within each comparison. %s",
             paste(sprintf("Layer `%s`: %s, because %s", ctx$choices$layer[ctx$choices$question == "Q4"], ctx$choices$default_method[ctx$choices$question == "Q4"],
-                          ctx$choices$rests_on[ctx$choices$question == "Q4"]), collapse = "; "), 100 * rule("R-PREV")),
-    if (is.null(r4)) "Not run." else paste(sprintf("Residual checks per feature (DHARMa on a negative binomial refit for count models; residual skewness and spread for LinDA). A feature that fails moves down the fallback ladder to a method that assumes less, and its result says so. %d of %d feature results needed a fallback rung; %d comparison(s) moved as a whole, because clearly more features failed than chance would give (one-sided binomial test, p < %s) (`03_results/Q4_differential/diagnostics.csv`).",
+                          ctx$choices$rests_on[ctx$choices$question == "Q4"]), collapse = "; "), 100 * rule("R-PREV"), sim_sentence),
+    if (is.null(r4)) "Not run." else paste(feature_range_note(r4),sprintf("Residual checks per feature (DHARMa on a negative binomial refit for count models; residual skewness and spread for LinDA). A feature that fails moves down the fallback ladder to a method that assumes less, and its result says so. %d of %d feature results needed a fallback rung; %d comparison(s) moved as a whole, because clearly more features failed than in clean data simulated from the same features (one-sided Fisher's exact test, p < %s) (`03_results/Q4_differential/diagnostics.csv`).",
                                              sum(r4$rung > 0), nrow(r4), length(unique(paste(r4$timepoint, r4$block, r4$contrast)[r4$whole_question_moved %in% TRUE])), rule("R-EXCESS")),
                                              if (any(is.finite(r4$share_expected_by_chance))) sprintf("**Some of these failures are expected by chance alone:** each feature gets 3 checks at p < %s, so about %.0f%% of features that fit well fail at least one. Compare that with the share that failed in each comparison (column `share_failed_checks`). A share near %.0f%% means most moves are probably chance; a much larger share means the model really does not suit these data. Either way, a moved feature's result is valid: it comes from a method that assumes less.",
                                                                                                 rule("R-DIAGP"), 100 * max(r4$share_expected_by_chance, na.rm = TRUE), 100 * max(r4$share_expected_by_chance, na.rm = TRUE)) else ""),
     sprintf("No differential-abundance method is best on all data (Nearing 2022; Wirbel 2024), which is why the alternatives are shown. A per-denominator fold change is not a per-cell change unless the denominator tracks cells.%s", batch_note),
     "Alternatives: LinDA or ANCOM-BC2, ALDEx2, and Wilcoxon on CLR (`04_agreement/Q4.csv`). LEfSe is shown for comparison only (`04_agreement/Q4_describe_only.csv`, F1); it is known to give many false positives.",
-    "03_results/Q4_differential/results.csv")
+    "03_results/Q4_differential/results.csv", "04_agreement/Q4.csv")
+  if (!is.null(res$override$calibration)) add("The full simulation check: every eligible method's false discovery rate and power on the simulated data sets (half with no planted difference, half with 10% of features planted at fold change 2), whatever the decision (`02_method_choice/simulation/calibration.csv`):", "",
+                                              md_table(res$override$calibration, c("contrast", "timepoint", "block", "n_reference", "method_id", "datasets", "failed_fits", "fdr", "power")), "")
   feature_block(res$q5$results, "## 11. Q5. Which features differ in presence?",
     "Is each feature present in a different share of samples in each level than in the reference, within each timepoint and block?",
     "Logistic regression per feature (R01); Firth's correction (G06) where a group is all present or all absent, which ordinary logistic regression cannot fit.",
     "Separation is the check; features that need Firth's correction say so.",
     "Only features whose presence varies are tested. With few samples, presence differences need to be large to be detected.",
-    "Alternative: Fisher's exact test (K03).", "03_results/Q5_presence/results.csv")
+    "Alternative: Fisher's exact test (K03).", "03_results/Q5_presence/results.csv", "04_agreement/Q5.csv")
   feature_block(res$q7$results, "## 12. Q7. Which feature sets shift together?",
     "Do the features of a set (each `set` column in the manifest) tend to move together in Q4's ranking?",
     "Pre-ranked fgsea (E02) on Q4's signed z-scores, so the whole ranking is used, not a cut-off list.",
     "None needed beyond Q4's.",
     "Sets come from the annotation the pipeline supplied; a set defined by the result itself would be circular.",
-    "Alternative: camera (E03) on CLR values, which allows for correlation between features.", "03_results/Q7_sets/results.csv")
+    "Alternative: camera (E03) on CLR values, which allows for correlation between features.", "03_results/Q7_sets/results.csv", "04_agreement/Q7.csv")
 
   idx <- ctx$figures
   if (nrow(idx)) {

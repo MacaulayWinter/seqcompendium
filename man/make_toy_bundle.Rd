@@ -7,7 +7,8 @@
 make_toy_bundle(
   dir,
   variant = c("main", "no_controls", "copy_null", "planted", "planted_da", "spread",
-    "zeroinfl_few", "zeroinfl_many", "presence", "no_denominator", "proportions"),
+    "zeroinfl_few", "zeroinfl_many", "presence", "no_denominator", "proportions",
+    "calib", "calib_mocks6"),
   seed = 20261029L
 )
 }
@@ -25,7 +26,10 @@ with 60 percent structural zeros) and "zeroinfl_many" (15 features with
 70 percent);
 "presence" (toyG15 present in every treated sample, absent from every
 control); "no_denominator" (no denominators file); "proportions" (the
-layer as proportions, unit proportion).
+layer as proportions, unit proportion); "calib" (20 subjects, 10 per
+group, one timepoint, 2 mocks with a known composition: enough reference
+samples for the override rule's simulation, E4) and "calib_mocks6" (the
+same with 6 mocks, so the shuffled-label mock test can run).
 In every variant with controls, toyG26-30 are contaminants: common in the
 blanks, rare in study samples.}
 

@@ -14,10 +14,10 @@ repos <- c(CRAN = sprintf("https://p3m.dev/cran/__linux__/noble/%s", SNAPSHOT),
 options(repos = repos, Ncpus = 4)
 pkgs <- c(
   # CRAN
-  "yaml", "iNEXT", "ggplot2", "digest", "vegan", "MicrobiomeStat", "mvabund", "logistf", "DHARMa", "MASS", "pscl",
+  "yaml", "iNEXT", "ggplot2", "digest", "vegan", "MicrobiomeStat", "mvabund", "logistf", "DHARMa", "MASS", "pscl", "MIDASim",
   "rmarkdown", "testthat", "pkgload", "remotes", "renv",
   # Bioconductor 3.23
-  "DESeq2", "ANCOMBC", "ALDEx2", "decontam", "fgsea", "limma", "lefser", "SummarizedExperiment", "TreeSummarizedExperiment")
+  "DESeq2", "ANCOMBC", "microbiome", "ALDEx2", "decontam", "fgsea", "limma", "lefser", "SummarizedExperiment", "TreeSummarizedExperiment")
 install.packages(pkgs)
 miss <- pkgs[!vapply(pkgs, function(p) tryCatch({ loadNamespace(p); TRUE }, error = function(e) { message(p, ": ", conditionMessage(e)); FALSE }), TRUE)]
 if (length(miss)) stop("Not installed: ", paste(miss, collapse = ", "))
