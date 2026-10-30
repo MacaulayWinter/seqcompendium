@@ -116,8 +116,9 @@ test_that("E3-M10: leads carry method, role, agreement; tier 2 needs q <= R-FDR;
   t <- l[l$question %in% c("Q2", "Q3", "Q4", "Q5", "Q7") & l$status %in% c("lead", "no_evidence"), ]
   expect_true(all(!is.na(t$method) & !is.na(t$method_role) & grepl("^[0-9]+/[0-9]+$", t$agreement) &
                   t$agreement_label %in% c("agreed", "partly agreed", "disagreed", "not testable")))
-  expect_true(all(l$q[l$tier %in% 2L] <= 0.10))
-  expect_false(any(l$tier %in% 1L))
+  expect_true(all(l$q[l$tier %in% 1:2] <= 0.10))
+  # Since E6 a lead can be tier 1, but only when leave-one-out says it is stable (D29b, D31).
+  expect_true(all(l$loo_stable[l$tier %in% 1L] == "yes"))
   expect_true(any(l$question == "Q0"))
 })
 

@@ -49,6 +49,14 @@ write_report <- function(out, ctx) {
   five <- function(asked, why, checks, limits, agree) add(
     sprintf("**What was asked.** %s", asked), "", sprintf("**Why this method.** %s", why), "", sprintf("**What the checks showed.** %s", checks), "",
     sprintf("**Limitations.** %s", limits), "", sprintf("**Did the alternatives agree.** %s Agreement is not proof: methods that agree can share the same bias.", agree), "")
+  # The top leads of one question (up to 10, by rank), with agreement and stability (D29, E6-M5).
+  top_leads <- function(Q) {
+    x <- leads[leads$question == Q & leads$status == "lead", , drop = FALSE]
+    if (!nrow(x)) return(add(sprintf("No %s result reached the lead threshold.", Q), ""))
+    x <- x[order(x$rank), , drop = FALSE]
+    add(sprintf("Top %s leads (of %d; all in `05_leads/leads.csv`):", Q, nrow(x)), "",
+        md_table(x, c("rank", "tier", "feature", "contrast", "timepoint", "effect", "q", "agreement_label", "loo_stable"), max_rows = 10), "")
+  }
   agree_summary <- function(r) if (is.null(r) || !nrow(r)) "Not testable." else {
     tb <- table(factor(r$agreement_label, levels = c("agreed", "partly agreed", "disagreed", "not testable")))
     sprintf("Per result: %s.", paste(sprintf("%s %d", names(tb), as.vector(tb)), collapse = ", "))
@@ -85,8 +93,9 @@ write_report <- function(out, ctx) {
          sprintf("A handful of samples per group gives little power: a difference can be real and still not reach q <= %s. Each predictor is compared on its own.%s Hill numbers count features, so one organism or gene split by the database inflates q = 0.%s",
                  rule("R-FDR"), batch_note, if (!nrow(des$controls)) " There are no controls, so contaminant features may be counted as diversity." else ""),
          paste("Alternatives: plug-in Hill numbers on rarefied counts (A01) and DivNet (A04, q = 1 and 2 only).", agree_summary(x)))
-    add(md_table(x, c("contrast", "timepoint", "block", "q_order", "n_reference", "n_level", "effect", "ci_low", "ci_high", "p", "q", "status", "method_role", "agreement", "agreement_label")), "")
+    add(md_table(x, c("contrast", "timepoint", "block", "q_order", "n_reference", "n_level", "effect", "ci_low", "ci_high", "p", "q", "status", "method_role", "agreement", "agreement_label", "loo_stable")), "")
   }
+  if (!is.null(r)) top_leads("Q2")
 
   add("## 9. Q3. Does overall composition differ?", "")
   r <- res$q3$results
@@ -97,7 +106,8 @@ write_report <- function(out, ctx) {
          sprintf("betadisper differed (p < %s) with unbalanced groups (ratio above %s) in %d of %d comparisons; there mvabund (B14) is the primary and the result says why. betadisper itself fires by chance in about %.0f%% of comparisons whose spread is really equal, so a switch to mvabund is a precaution, not proof that spread differs.", rule("R-DIAGP"), rule("R-UNBAL"), sum(r$primary == "B14 mvabund"), nrow(r), 100 * rule("R-DIAGP")),
          sprintf("Permutation p-values cannot go below 1/%d. R-squared is the share of variation explained, not a size of difference in any one feature.%s", rule("R-PERM") + 1, batch_note),
          paste("Alternatives: PERMANOVA on Bray-Curtis of rarefied counts (B01) and mvabund (B14). ANOSIM and SIMPER are shown in `04_agreement/Q3.csv` for comparison only (F1).", agree_summary(r)))
-    add(md_table(r, c("layer", "contrast", "timepoint", "block", "group_sizes", "permanova_r2", "permanova_p", "betadisper_p", "primary", "q", "status", "agreement_label")), "")
+    add(md_table(r, c("layer", "contrast", "timepoint", "block", "group_sizes", "permanova_r2", "permanova_p", "betadisper_p", "primary", "q", "status", "agreement_label", "loo_stable")), "")
+    top_leads("Q3")
   }
 
   # Never silent: an alternative method that could not fit is named, with how often.
@@ -116,7 +126,8 @@ write_report <- function(out, ctx) {
     five(asked, why, checks, limits, paste(alts, agree_summary(r), failed_methods(agr_file)))
     r$tested <- 1L; r$leads <- as.integer(r$status == "lead")
     s <- stats::aggregate(cbind(tested, leads) ~ layer + contrast + timepoint + block, data = r, FUN = sum)
-    add(md_table(s), "", sprintf("Every feature, with its method, rung, effect, q and agreement: `%s`. The leads are in the leads table.", file), "")
+    add(md_table(s), "", sprintf("Every feature, with its method, rung, effect, q and agreement: `%s`.", file), "")
+    top_leads(sub("^## [0-9]+\\. (Q[0-9]+)\\..*$", "\\1", title))
   }
   r4 <- res$q4$results
   # The range the residual checks and the chance rule were tested on (D17's
@@ -180,6 +191,7 @@ write_report <- function(out, ctx) {
       add(sprintf("%s (`03_results/Q6_change/%s.csv`):", c(alpha = "Diversity", features = "Features", composition = "Whole community")[[nm]], nm), "",
           md_table(stats::aggregate(cbind(tested, leads) ~ layer + predictor + group + change + block, data = r, FUN = sum)), "")
     }
+    top_leads("Q6")
   }
 
   idx <- ctx$figures
@@ -202,10 +214,19 @@ write_report <- function(out, ctx) {
     if (nrow(one)) add(sprintf("- %s, %s, %s, %s, timepoint %s, block %s: effect %s (95%% CI %s to %s), q = %s.",
                                one$question, one$layer, one$feature, one$contrast, one$timepoint, one$block, signif(one$effect, 3), signif(one$ci_low, 3), signif(one$ci_high, 3), signif(one$q, 3)), "")
   } else add("- Every tested comparison reached the lead threshold.", "")
+  dec <- res$override$decisions
+  if (!is.null(dec)) for (i in seq_len(nrow(dec))) if (is.finite(dec$mde_log2[i]))
+    add(sprintf("- Q4, %s, timepoint %s, block %s: on data simulated from your controls, a fold change of about %.1f (log2 %.2f) was found with 80%% power; smaller differences may have been missed.",
+                dec$contrast[i], dec$timepoint[i], dec$block[i], 2^dec$mde_log2[i], dec$mde_log2[i]))
+  fl <- ne[is.finite(ne$p_floor) & ne$p_floor > rule("R-FDR"), , drop = FALSE]
+  if (nrow(fl)) add("", sprintf("%d of these results come from tests whose smallest possible p-value is above %s at these group sizes: this design cannot reach significance there, so they show effect sizes only, not an absence of difference.", nrow(fl), rule("R-FDR")))
+  add("")
   nt <- leads[leads$status %in% c("not_testable", "not_asked"), , drop = FALSE]
   add("Questions not asked, or not testable, and why:", "", sprintf("- %s (%s) %s: %s", nt$question, QUESTIONS[nt$question], gsub("_", " ", nt$status), nt$caveats), "")
 
   add("## 15. Leads", "", sprintf("All %d rows, ranked by tier, then by effect size relative to its interval (`05_leads/leads.csv`). No row is hidden.", nrow(leads)), "",
+      sprintf("**Tier 1:** a lead (q <= %s) from the default method with its checks passed, its alternatives agreed, stable when any one sample is left out, and no contaminant flag. **Tier 2:** every other lead (the caveats say which condition it missed). **Tier 3:** no evidence, but an effect at least as large as the smallest one the simulation showed this design can detect. **Tier 4:** the rest. Tier 1: %d, tier 2: %d, tier 3: %d.",
+              rule("R-FDR"), sum(leads$tier %in% 1L), sum(leads$tier %in% 2L), sum(leads$tier %in% 3L)), "",
       md_table(leads, c("rank", "tier", "status", "question", "layer", "feature", "contrast", "timepoint", "effect", "q", "agreement_label", "flags")), "")
   add("## Provenance", "", "R and package versions: `provenance/session_info.txt`. Engine, rules and seed: `provenance/engine.yaml`. Input checksums: `provenance/inputs.sha256`.")
 

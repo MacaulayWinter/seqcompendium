@@ -53,20 +53,22 @@ as_leads <- function(r, Q, feature_col, base_caveats, contaminants, result_file,
     contam <- Q %in% c("Q4", "Q5") && !is.null(contaminants) && any(contaminants$layer == x$layer & contaminants$feature == feat & contaminants$possible_contaminant)
     tested <- x$status %in% c("lead", "no_evidence")
     mid <- x$method_id %||% x$primary %||% "A02"
+    pf <- p_floor_of(mid, x$n_reference %||% NA, x$n_level %||% NA)
     lead_row(
       lead_id = gsub("[^A-Za-z0-9=.-]+", "_", sprintf("%s-%s-%s-%s-%s-%s-%s", Q, x$layer, x$predictor, x$contrast, x$timepoint, x$block, feat)),
-      tier = if (x$status == "lead") 2L else if (x$status == "no_evidence") 4L else NA_integer_,
+      tier = tier_of(x$status, x$agreement_label %||% "not testable", x$loo_stable %||% "not run", x$method_role %||% "default",
+                     if (contam) "possible_contaminant" else "", x$effect, x$mde_log2 %||% NA_real_),
       status = x$status, question = Q, layer = x$layer, feature = feat,
       contrast = sprintf("%s: %s", x$predictor, x$contrast), timepoint = x$timepoint, block = x$block,
       effect = x$effect, effect_unit = x$effect_unit %||% sprintf("difference in Hill number q = %d (effective number of features)", x$q_order),
-      ci_low = x$ci_low %||% NA, ci_high = x$ci_high %||% NA, p = x$p, q = x$q, p_floor = NA,
+      ci_low = x$ci_low %||% NA, ci_high = x$ci_high %||% NA, p = x$p, q = x$q, p_floor = pf,
       n_per_group = sprintf("%s=%d; %s=%d", sub("^.* vs ", "", x$contrast), x$n_reference, sub(" vs .*$", "", x$contrast), x$n_level),
       method = unname(METHOD_NAMES[mid]) %||% mid, method_role = x$method_role %||% "default",
-      agreement = x$agreement %||% "0/0", agreement_label = x$agreement_label %||% "not testable", loo_stable = "not run (milestone E6)",
-      min_detectable_effect = "not run (simulation: E4)",
+      agreement = x$agreement %||% "0/0", agreement_label = x$agreement_label %||% "not testable", loo_stable = x$loo_stable %||% "not run",
+      min_detectable_effect = if (is.finite(x$mde_log2 %||% NA_real_)) sprintf("%.2f (log2 fold change)", x$mde_log2) else (x$mde_note %||% "not available: no simulation for this question"),
       caveats = paste(c(if (!tested) x$reason, if (nzchar(x$caveat %||% "")) x$caveat,
                         if (contam) "possible contaminant (Q0): flagged, not removed; cannot reach tier 1",
-                        if (x$status == "lead") "tier 2 at most: no lead reaches tier 1 until leave-one-out exists (E6)",
+                        floor_caveat(pf),
                         if (tested) base_caveats, if (tested && !is.null(x$adjusted_for)) sprintf("adjusted for: %s", x$adjusted_for)), collapse = "; "),
       flags = if (contam) "possible_contaminant" else NA,
       result_file = result_file)
@@ -85,7 +87,7 @@ skipped_rows <- function(sk, Q) {
 build_leads <- function(res, layers, des) {
   rows <- list(lead_row(lead_id = "Q1-all", status = "described", question = "Q1", layer = paste(names(layers), collapse = "; "), feature = "all",
                         caveats = "description only, not a test", result_file = "03_results/Q1_describe/results.csv"))
-  base_caveats <- c("leave-one-out not run yet (E6)",
+  base_caveats <- c(
                     if (!any(grepl("^negative_", des$controls$kind))) "no negative controls, so contaminants could not be checked")
   if (!is.null(res$q0)) for (nm in unique(res$q0$layer)) {
     x <- res$q0[res$q0$layer == nm, ]
@@ -128,14 +130,15 @@ q6_leads <- function(q6, base_caveats) {
       feat <- switch(kind, alpha = sprintf("whole community, Hill q = %d", x$q_order), features = x$feature, composition = "whole community composition")
       tested <- x$status %in% c("lead", "no_evidence")
       lead_row(lead_id = gsub("[^A-Za-z0-9=.-]+", "_", sprintf("Q6-%s-%s-%s-%s-%s-%s", x$layer, x$predictor, x$group, x$change, x$block, feat)),
-               tier = if (x$status == "lead") 2L else if (x$status == "no_evidence") 4L else NA_integer_, status = x$status, question = "Q6",
+               tier = tier_of(x$status, x$agreement_label %||% "not testable", x$loo_stable %||% "not run", x$method_role %||% "default", "", x$effect, NA_real_),
+               status = x$status, question = "Q6",
                layer = x$layer, feature = feat, contrast = sprintf("%s = %s: %s", x$predictor, x$group, x$change), timepoint = x$change, block = x$block,
                effect = x$effect, effect_unit = x$effect_unit %||% "change in Hill number", ci_low = x$ci_low %||% NA, ci_high = x$ci_high %||% NA,
-               p = x$p, q = x$q, p_floor = NA, n_per_group = sprintf("%d subjects", x$n_subjects %||% NA_integer_),
+               p = x$p, q = x$q, p_floor = p_floor_of(x$method_id, x$n_subjects %||% NA), n_per_group = sprintf("%d subjects", x$n_subjects %||% NA_integer_),
                method = unname(METHOD_NAMES[x$method_id]) %||% x$method_id, method_role = x$method_role %||% "default",
-               agreement = x$agreement %||% "0/0", agreement_label = x$agreement_label %||% "not testable", loo_stable = "not run (milestone E6)",
-               min_detectable_effect = "not run (simulation: E4)",
-               caveats = paste(c(if (nzchar(x$caveat %||% "")) x$caveat, if (x$status == "lead") "tier 2 at most: no lead reaches tier 1 until leave-one-out exists (E6)",
+               agreement = x$agreement %||% "0/0", agreement_label = x$agreement_label %||% "not testable", loo_stable = x$loo_stable %||% "not run",
+               min_detectable_effect = "not available: no simulation for change over time",
+               caveats = paste(c(if (nzchar(x$caveat %||% "")) x$caveat, floor_caveat(p_floor_of(x$method_id, x$n_subjects %||% NA)),
                                  if (tested) base_caveats, sprintf("adjusted for: %s", x$adjusted_for %||% "nothing")), collapse = "; "),
                result_file = file)
     }))
@@ -143,3 +146,27 @@ q6_leads <- function(q6, base_caveats) {
   rbind(one(q6$alpha, "alpha", "03_results/Q6_change/alpha.csv"), one(q6$features, "features", "03_results/Q6_change/features.csv"),
         one(q6$composition, "composition", "03_results/Q6_change/composition.csv"))
 }
+
+# The smallest p-value an exact or permutation test can give at these sizes
+# (design section 6; CLAUDE.md D29d). NA for model-based tests.
+p_floor_of <- function(id, n1 = NA, n2 = NA) {
+  if (is.null(id) || is.na(id)) return(NA_real_)
+  switch(id,
+         K02 = , D17 = if (is.finite(n1) && is.finite(n2)) 2 / choose(n1 + n2, n1) else NA_real_,
+         K02p = if (is.finite(n1)) 2 / 2^n1 else NA_real_,
+         K04 = , K04p = 1 / (rule("R-PERM") + 1),
+         NA_real_)
+}
+
+# Tiers (C17; CLAUDE.md D29b).
+tier_of <- function(status, agreement_label, loo, role, flags, effect, mde) {
+  if (status == "lead") {
+    clean <- identical(agreement_label, "agreed") && identical(loo, "yes") && identical(role, "default") &&
+             !grepl("possible_contaminant|thin_evidence|no_benchmark", flags %||% "")
+    return(if (clean) 1L else 2L)
+  }
+  if (status == "no_evidence") return(if (is.finite(mde) && is.finite(effect) && abs(effect) >= mde) 3L else 4L)
+  NA_integer_
+}
+
+floor_caveat <- function(pf) if (is.finite(pf) && pf > rule("R-FDR")) sprintf("this design cannot reach significance (the smallest possible p is %.3g, above %s); effect sizes only", pf, rule("R-FDR")) else NULL
