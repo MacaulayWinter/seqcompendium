@@ -9,7 +9,7 @@ make_toy_bundle(
   variant = c("main", "no_controls", "copy_null", "planted", "planted_da", "spread",
     "zeroinfl_few", "zeroinfl_many", "presence", "no_denominator", "proportions",
     "calib", "calib_mocks6", "long_planted", "long_div", "few_subjects", "long40",
-    "long4tp", "long_zeroinfl", "adjust", "confounded_batch"),
+    "long4tp", "long_zeroinfl", "adjust", "confounded_batch", "fragile"),
   seed = 20261029L
 )
 }
@@ -39,6 +39,8 @@ E5 (longitudinal; the same subjects at every timepoint): "long_planted"
 structural zeros; 50 percent in "long_zeroinfl"). E5 (adjustment, one timepoint, 20 subjects): "adjust"
 (a second predictor `diet`, unbalanced across groups, carries the planted
 effect on toyG06-08) and "confounded_batch" (batch identical to group).
+E6: "fragile" (as "planted_da", plus toyG12 at 2.2 times its counts in
+treated samples: a borderline lead that one sample can make or break).
 "main" and "no_controls" are longitudinal too; every other variant gives
 each sample its own subject, so it is a snapshot design.
 In every variant with controls, toyG26-30 are contaminants: common in the

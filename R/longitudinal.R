@@ -146,7 +146,9 @@ glmm_coefs <- function(fit) {
 
 check_glmm <- function(fit, k) {
   if (is.null(fit)) return(list(failed = TRUE, why = "the mixed model did not converge"))
-  sim <- DHARMa::simulateResiduals(fit, n = 250, seed = seed_for(2000 + k), plot = FALSE)
+  # A check that cannot run counts as failed, with the reason; it never stops the run (CLAUDE.md D32).
+  sim <- tryCatch(suppressMessages(DHARMa::simulateResiduals(fit, n = 250, seed = seed_for(2000 + k), plot = FALSE)), error = function(e) NULL)
+  if (is.null(sim)) return(list(failed = TRUE, why = "the residual check could not run (the model's simulations were invalid)"))
   pu <- DHARMa::testUniformity(sim, plot = FALSE)$p.value; pd <- DHARMa::testDispersion(sim, plot = FALSE)$p.value
   pz <- DHARMa::testZeroInflation(sim, plot = FALSE)$p.value; a <- rule("R-DIAGP")
   why <- c(if (pu < a) "residuals not uniform", if (pd < a) "dispersion not as the model expects", if (pz < a) "more zeros than the model expects")

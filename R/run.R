@@ -133,6 +133,25 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
   if (!is.null(q5$results)) q5$results <- agreement_labels(q5$results, q5$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
   q7 <- q7_sets(q4$for_q7, lc$layers)
   if (!is.null(q7$results)) q7$results <- agreement_labels(q7$results, q7$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "set_column", "feature"))
+  # The simulation's minimum detectable effect onto each Q4 result (D29c).
+  if (!is.null(q4$results) && !is.null(ov$decisions)) {
+    k <- c("layer", "predictor", "contrast", "timepoint", "block")
+    q4$results <- merge(q4$results, ov$decisions[, c(k, "mde_log2", "mde_note")], by = k, all.x = TRUE, sort = FALSE)
+    q4$results <- q4$results[order(q4$results$layer, q4$results$predictor, q4$results$contrast, q4$results$timepoint, q4$results$block, q4$results$feature), ]
+    rownames(q4$results) <- NULL
+  }
+  # Leave-one-out on every lead (design section 6; D29a).
+  if (long) {
+    q2$results <- loo_long(q2$results, lus, lc$layers, des, q2$per_sample, "q2")
+    q4$results <- loo_long(q4$results, lus, lc$layers, des, q2$per_sample, "q4")
+  } else {
+    q2$results <- loo_q2_snapshot(q2$results, units, q2$per_sample, des)
+    q4$results <- loo_q4_snapshot(q4$results, units, lc$layers, des)
+  }
+  q3$results <- loo_q3(q3$results, units, lc$layers, des)
+  q5$results <- loo_q5(q5$results, units, lc$layers, des)
+  q7$results <- loo_q7(q7$results, units, lc$layers, des, q4, long)
+  if (!is.null(q2$results)) write_csv(q2$results, file.path(qdir, "results.csv"))
   w <- function(x, ...) if (!is.null(x)) write_csv(x, file.path(out, ...))
   w(q3$results, "03_results", "Q3_composition", "results.csv"); w(q3$ordination, "03_results", "Q3_composition", "ordination.csv")
   w(q4$results, "03_results", "Q4_differential", "results.csv"); w(q4$checks, "03_results", "Q4_differential", "diagnostics.csv")
@@ -146,6 +165,9 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
     a6a <- change_agreement_alpha(lus, q2$per_sample); a6f <- change_agreement_features(lus, lc$layers)
     if (!is.null(q6$alpha)) q6$alpha <- agreement_labels(q6$alpha, a6a, c("layer", "predictor", "group", "change", "block", "q_order"))
     if (!is.null(q6$features)) q6$features <- agreement_labels(q6$features, a6f, c("layer", "predictor", "group", "change", "block", "feature"))
+    q6$alpha <- loo_long(q6$alpha, lus, lc$layers, des, q2$per_sample, "q6a")
+    q6$features <- loo_long(q6$features, lus, lc$layers, des, q2$per_sample, "q6f")
+    q6$composition <- loo_q6_composition(q6$composition, lus, lc$layers)
     w(q6$alpha, "03_results", "Q6_change", "alpha.csv"); w(q6$features, "03_results", "Q6_change", "features.csv")
     w(q6$composition, "03_results", "Q6_change", "composition.csv"); w(a6a, "04_agreement", "Q6_alpha.csv"); w(a6f, "04_agreement", "Q6_features.csv")
   }

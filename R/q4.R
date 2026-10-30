@@ -104,7 +104,9 @@ check_nb <- function(ud, f, k) {
   fit <- tryCatch(suppressWarnings(MASS::glm.nb(stats::as.formula(paste("y ~", cov_terms(ud$cov), "g + offset(off)")), data = d)), error = function(e) NULL)
   if (is.null(fit)) return(data.frame(feature = f, check = "negative binomial refit", uniformity_p = NA, dispersion_p = NA, zero_inflation_p = NA,
                                       failed = TRUE, why = "the negative binomial refit for the check did not converge"))
-  sim <- DHARMa::simulateResiduals(fit, n = 250, seed = seed_for(1000 + k), plot = FALSE)
+  sim <- tryCatch(suppressMessages(DHARMa::simulateResiduals(fit, n = 250, seed = seed_for(1000 + k), plot = FALSE)), error = function(e) NULL)
+  if (is.null(sim)) return(data.frame(feature = f, check = "DHARMa (negative binomial refit)", uniformity_p = NA, dispersion_p = NA, zero_inflation_p = NA,
+                                      failed = TRUE, why = "the residual check could not run (the model's simulations were invalid)"))
   pu <- DHARMa::testUniformity(sim, plot = FALSE)$p.value
   pd <- DHARMa::testDispersion(sim, plot = FALSE)$p.value
   pz <- DHARMa::testZeroInflation(sim, plot = FALSE)$p.value

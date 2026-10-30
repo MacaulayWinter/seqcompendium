@@ -13,13 +13,13 @@ simrep <- function() getOption("seqcompendium.simrep", rule("R-SIMREP"))   # the
 # One simulated comparison at the real group sizes. Planted: 10% of the
 # features present in at least half the reference samples, at fold change 2
 # in the second group, on the absolute scale (shares shift by renormalising).
-simulate_unit <- function(fit, base, libs, ratio, n1, n2, planted, seed) {
+simulate_unit <- function(fit, base, libs, ratio, n1, n2, planted, seed, fc = 2) {
   set.seed(seed)
   n <- n1 + n2
   common <- which(colMeans(fit$ref > 0) >= 0.5)
   hit <- if (planted) sort(sample(common, max(1, round(0.1 * ncol(fit$ref))))) else integer(0)
   M <- matrix(base, n, length(base), byrow = TRUE)
-  if (length(hit)) M[(n1 + 1):n, hit] <- M[(n1 + 1):n, hit] * 2
+  if (length(hit)) M[(n1 + 1):n, hit] <- M[(n1 + 1):n, hit] * fc
   M <- M / rowSums(M)
   lib <- sample(libs, n, replace = TRUE)
   mod <- suppressMessages(MIDASim::MIDASim.modify(fit$midas, lib.size = lib, individual.rel.abund = M))
@@ -67,7 +67,29 @@ calibrate_unit <- function(u, layer, ids, unit_index) {
                fdr = if (nrow(ok)) mean(ifelse(ok$calls > 0, ok$false_calls / ok$calls, 0)) else NA_real_,
                power = if (any(ok$planted & ok$n_planted > 0)) mean((ok$true_calls / ok$n_planted)[ok$planted & ok$n_planted > 0]) else NA_real_)
   }))
-  list(summary = summ, per_rep = per_rep, n_ref = nrow(ref))
+  list(summary = summ, per_rep = per_rep, n_ref = nrow(ref),
+       sim = list(fit = fit, base = base, libs = rowSums(ref), ratio = ratio, n1 = length(u$ref_samples), n2 = length(u$level_samples)))
+}
+
+# Minimum detectable effect (CLAUDE.md D29c): the final method on R-SIMREP/2
+# extra simulated data sets per fold change; the smallest fold change found
+# with power >= 0.8, on the log2 scale.
+MDE_FC <- c(1.5, 2, 3, 4, 8)
+mde_unit <- function(sim, id, unit_index) {
+  pw <- vapply(seq_along(MDE_FC), function(j) {
+    vals <- vapply(seq_len(max(1, simrep() %/% 2)), function(r) {
+      x <- simulate_unit(sim$fit, sim$base, sim$libs, sim$ratio, sim$n1, sim$n2, TRUE, seed = seed_for(9000) + 1000L * unit_index + 100L * j + r, fc = MDE_FC[j])
+      feats <- prevalent(x$ud$m, x$ud$g); tr <- intersect(x$truth, feats); if (!length(tr)) return(NA_real_)
+      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](x$ud, feats))), error = function(e) NULL); if (is.null(res)) return(NA_real_)
+      ok <- is.finite(res$p); qq <- rep(NA_real_, nrow(res)); qq[ok] <- stats::p.adjust(res$p[ok], "BH")
+      mean(tr %in% res$feature[!is.na(qq) & qq <= rule("R-FDR")])
+    }, 1)
+    mean(vals, na.rm = TRUE)
+  }, 1)
+  hit <- which(is.finite(pw) & pw >= 0.8)
+  list(mde = if (length(hit)) log2(MDE_FC[min(hit)]) else NA_real_, power = pw,
+       note = if (length(hit)) sprintf("smallest fold change found with power >= 0.8 on simulated data: %s (log2 %.2f)", MDE_FC[min(hit)], log2(MDE_FC[min(hit)]))
+              else sprintf("no fold change up to %s reached power 0.8 on simulated data", max(MDE_FC)))
 }
 
 # The decision (design 5.3 step 4, C13): keep the default if its simulated
@@ -146,15 +168,17 @@ run_override <- function(units, layers, choices, considered, des, bundle_dir) {
     if (!is.null(x$skipped)) {
       dec[[i]] <- cbind(key, default_id = ch$final_id, final_id = ch$final_id, decision = x$skipped, n_reference = x$n_ref,
                         default_fdr = NA, limit = rule("R-CAL") * rule("R-FDR"), datasets = 0,
-                        caveat = sprintf("the default could not be checked on simulated data from your controls (%s); it was kept on the strength of published benchmarks only", sub("^not run: ", "", x$skipped)))
+                        caveat = sprintf("the default could not be checked on simulated data from your controls (%s); it was kept on the strength of published benchmarks only", sub("^not run: ", "", x$skipped)),
+                        mde_log2 = NA_real_, mde_note = sprintf("not available: no simulation (%s)", sub("^not run: ", "", x$skipped)))
       next
     }
     d <- decide_override(x$summary, ch$final_id, mk$failed)
     cal[[i]] <- cbind(key, n_reference = x$n_ref, x$summary)
     reps[[i]] <- cbind(key, x$per_rep)
+    md <- if (d$final %in% names(FITS)) mde_unit(x$sim, d$final, i) else list(mde = NA_real_, note = "not available: no simulation for this method")
     dec[[i]] <- cbind(key, default_id = ch$final_id, final_id = d$final, decision = d$decision, n_reference = x$n_ref,
                       default_fdr = x$summary$fdr[x$summary$method_id == ch$final_id], limit = rule("R-CAL") * rule("R-FDR"),
-                      datasets = simrep(), caveat = d$caveat)
+                      datasets = simrep(), caveat = d$caveat, mde_log2 = md$mde, mde_note = md$note)
   }
   bind <- function(l) { l <- Filter(Negate(is.null), l); if (length(l)) do.call(rbind, l) else NULL }
   list(decisions = bind(dec), calibration = bind(cal), per_rep = bind(reps), mock = mk)
@@ -168,7 +192,8 @@ long_override_note <- function(units, layers, choices, des, bundle_dir, consider
   dec <- do.call(rbind, lapply(Filter(function(u) u$testable, units), function(u) {
     L <- layers[[u$layer]]; final <- if (is.null(L$spec$denominators)) "D09re" else "L02"
     cbind(unit_key(u), default_id = final, final_id = final, decision = "not run: longitudinal design (the simulation check covers the per-timepoint methods; the mixed models are validated at E7)",
-          n_reference = length(u$ref_samples), default_fdr = NA, limit = rule("R-CAL") * rule("R-FDR"), datasets = 0, caveat = "")
+          n_reference = length(u$ref_samples), default_fdr = NA, limit = rule("R-CAL") * rule("R-FDR"), datasets = 0, caveat = "",
+          mde_log2 = NA_real_, mde_note = "not available: no simulation in a longitudinal design")
   }))
   list(decisions = dec, calibration = NULL, per_rep = NULL, mock = mk)
 }
