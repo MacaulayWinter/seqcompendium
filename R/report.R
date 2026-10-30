@@ -118,6 +118,15 @@ write_report <- function(out, ctx) {
     add(md_table(s), "", sprintf("Every feature, with its method, rung, effect, q and agreement: `%s`. The leads are in the leads table.", file), "")
   }
   r4 <- res$q4$results
+  # The range the residual checks and the chance rule were tested on (D17's
+  # grid; CLAUDE.md D22). A comparison outside it is flagged, not refused.
+  feature_range_note <- function(r) {
+    n <- stats::aggregate(feature ~ layer + contrast + timepoint + block, data = r, FUN = length)
+    out <- n[n$feature < 30 | n$feature > 300, ]
+    sprintf("The residual checks and the rule for moving a whole comparison were tested on 30 to 300 features per comparison; this bundle has %d to %d.%s",
+            min(n$feature), max(n$feature),
+            if (nrow(out)) sprintf(" **%d comparison(s) are outside that range, so how often their checks move by chance has not been tested.**", nrow(out)) else "")
+  }
   dec <- res$override$decisions
   sim_sentence <- if (is.null(dec)) "" else paste(vapply(seq_len(nrow(dec)), function(i) { d <- dec[i, ]
     where <- sprintf("For %s at timepoint %s, block %s", d$contrast, d$timepoint, d$block)
@@ -131,7 +140,7 @@ write_report <- function(out, ctx) {
     sprintf("%s. Features present in at least %.0f%% of one group's samples are tested (R-PREV); q-values are Benjamini-Hochberg within each comparison. %s",
             paste(sprintf("Layer `%s`: %s, because %s", ctx$choices$layer[ctx$choices$question == "Q4"], ctx$choices$default_method[ctx$choices$question == "Q4"],
                           ctx$choices$rests_on[ctx$choices$question == "Q4"]), collapse = "; "), 100 * rule("R-PREV"), sim_sentence),
-    if (is.null(r4)) "Not run." else paste(sprintf("Residual checks per feature (DHARMa on a negative binomial refit for count models; residual skewness and spread for LinDA). A feature that fails moves down the fallback ladder to a method that assumes less, and its result says so. %d of %d feature results needed a fallback rung; %d comparison(s) moved as a whole, because clearly more features failed than chance would give (one-sided binomial test, p < %s) (`03_results/Q4_differential/diagnostics.csv`).",
+    if (is.null(r4)) "Not run." else paste(feature_range_note(r4),sprintf("Residual checks per feature (DHARMa on a negative binomial refit for count models; residual skewness and spread for LinDA). A feature that fails moves down the fallback ladder to a method that assumes less, and its result says so. %d of %d feature results needed a fallback rung; %d comparison(s) moved as a whole, because clearly more features failed than in clean data simulated from the same features (one-sided Fisher's exact test, p < %s) (`03_results/Q4_differential/diagnostics.csv`).",
                                              sum(r4$rung > 0), nrow(r4), length(unique(paste(r4$timepoint, r4$block, r4$contrast)[r4$whole_question_moved %in% TRUE])), rule("R-EXCESS")),
                                              if (any(is.finite(r4$share_expected_by_chance))) sprintf("**Some of these failures are expected by chance alone:** each feature gets 3 checks at p < %s, so about %.0f%% of features that fit well fail at least one. Compare that with the share that failed in each comparison (column `share_failed_checks`). A share near %.0f%% means most moves are probably chance; a much larger share means the model really does not suit these data. Either way, a moved feature's result is valid: it comes from a method that assumes less.",
                                                                                                 rule("R-DIAGP"), 100 * max(r4$share_expected_by_chance, na.rm = TRUE), 100 * max(r4$share_expected_by_chance, na.rm = TRUE)) else ""),

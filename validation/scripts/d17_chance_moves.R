@@ -24,8 +24,8 @@ one <- function(k) {
   ud <- list(m = m, g = grp, den = if (g$default == "D01") rowSums(m) else NULL, lib = rowSums(m), samples = rownames(m))
   feats <- ns$prevalent(m, grp)
   chk <- do.call(rbind, lapply(seq_along(feats), function(i) if (g$default == "D01") ns$check_nb(ud, feats[i], i) else ns$check_lm_clr(ud, feats[i])))
-  chance <- ns$chance_failure_rate(ud, feats, g$default == "D01")
-  pv <- stats::binom.test(sum(chk$failed), length(feats), chance, alternative = "greater")$p.value
+  cr <- ns$chance_failure_rate(ud, feats, g$default == "D01"); chance <- cr$rate
+  pv <- stats::fisher.test(matrix(c(sum(chk$failed), sum(!chk$failed), cr$failed, cr$total - cr$failed), 2, byrow = TRUE), alternative = "greater")$p.value
   data.frame(cell = cell, comparison = k, n_features = length(feats), n_per_group = g$n_per_group, default = g$default,
              failed = sum(chk$failed), chance_rate = chance, excess_p = pv, moved = pv < ns$rule("R-EXCESS"))
 }

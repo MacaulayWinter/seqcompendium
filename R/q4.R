@@ -7,7 +7,7 @@
 #   count models  rung 1 zero-inflated NB (R02), rung 2 permutation test on CLR (K04)
 #   LinDA         rung 1 Welch t-test on CLR,   rung 2 Wilcoxon on CLR
 # A feature that fails its checks moves down a rung, with a caveat; if more
-# features fail than chance would give (binomial test, R-EXCESS; CLAUDE.md D17),
+# features fail than in clean simulated data (Fisher's exact test, R-EXCESS; CLAUDE.md D17, D22),
 # the whole question moves a rung (design C14).
 # Agreement set and describe-only methods run alongside, every time.
 
@@ -142,10 +142,14 @@ q4_unit <- function(u, layer, default_id) {
   # whether this comparison clearly exceeds it (D17). The chance rate is
   # measured, not assumed (CLAUDE.md D21): the same checks are run on clean
   # data simulated from this comparison's own features.
-  chance <- chance_failure_rate(ud, feats, count_model)
-  # The whole comparison moves only when clearly more features failed than
-  # chance would give (one-sided binomial test, R-EXCESS; CLAUDE.md D17).
-  excess_p <- stats::binom.test(sum(chk$failed), length(feats), chance, alternative = "greater")$p.value
+  cr <- chance_failure_rate(ud, feats, count_model)
+  chance <- cr$rate
+  # The whole comparison moves only when clearly more features failed than in
+  # the clean simulated data: one-sided Fisher's exact test of the two
+  # failure shares, so the uncertainty in the measured chance rate counts too
+  # (R-EXCESS; CLAUDE.md D17, D22).
+  excess_p <- stats::fisher.test(matrix(c(sum(chk$failed), sum(!chk$failed), cr$failed, cr$total - cr$failed), 2, byrow = TRUE),
+                                 alternative = "greater")$p.value
   whole <- excess_p < rule("R-EXCESS")
   chance_note <- sprintf(
     "on clean data simulated from this comparison's own features, about %.1f%% of features fail these residual checks by chance; here %d of %d features failed (about %.1f expected by chance), so this feature may have moved by chance. Its result is still valid: it comes from a method that assumes less",
@@ -159,7 +163,7 @@ q4_unit <- function(u, layer, default_id) {
     r <- base[base$feature == f, , drop = FALSE]; rung <- 0L; cav <- character(0)
     if (whole || chk$failed[chk$feature == f] || !is.finite(r$p)) {
       r1 <- tryCatch(rung1(f), error = function(e) NULL); rung <- 1L
-      cav <- c(cav, if (whole) sprintf("%d of %d features failed their residual checks, more than chance would give (about %.1f expected; binomial p = %.3g < R-EXCESS), so the whole question moved to rung 1 (%s)", sum(chk$failed), length(feats), chance * length(feats), excess_p, rung1_name)
+      cav <- c(cav, if (whole) sprintf("%d of %d features failed their residual checks, more than in clean simulated data (about %.1f expected; Fisher's exact p = %.3g < R-EXCESS), so the whole question moved to rung 1 (%s)", sum(chk$failed), length(feats), chance * length(feats), excess_p, rung1_name)
                     else sprintf("residual checks failed (%s), so refitted at rung 1 (%s)", chk$why[chk$feature == f], rung1_name), chance_note)
       if (is.null(r1) || !is.finite(r1$p)) { r1 <- tryCatch(rung2(f), error = function(e) NULL); rung <- 2L
         cav <- c(cav, sprintf("rung 1 did not fit, so rung 2 (%s)", rung2_name)) }
@@ -264,7 +268,6 @@ chance_failure_rate <- function(ud, feats, count_model) {
       failed <- failed + f$failed; total <- total + 1
     }
   }
-  if (total == 0) return(rule("R-DIAGP"))
-  # Never zero: a chance rate of 0 would make any single failure "excess".
-  max(failed / total, 1 / (total + 1))
+  if (total == 0) return(list(rate = NA_real_, failed = 0, total = 0))
+  list(rate = failed / total, failed = failed, total = total)
 }
