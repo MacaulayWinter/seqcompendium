@@ -67,17 +67,43 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
   write_csv(choices, file.path(out, "02_method_choice", "choices.csv"))
 
   units <- contrast_units(lc$layers, des, cells)
+  # Longitudinal designs (E5): mixed models for Q2 and Q4, and Q6.
+  des$long_reason <- long_ready(des)
+  lus <- if (is.null(des$long_reason)) long_units(lc$layers, des, cells) else list()
+  if (is.null(des$long_reason) && !length(lus)) des$long_reason <- "no predictor with listed levels has two or more timepoints to compare"
+  long <- length(lus) > 0
+  if (long) {
+    # The longitudinal defaults of design section 5.2 (S1 longitudinal table).
+    i2 <- choices$question == "Q2"; i4 <- choices$question == "Q4"
+    choices$default_id[i2] <- "L01"; choices$final_id[i2] <- "L01"; choices$default_method[i2] <- "linear mixed model on the Hill numbers (subject random effect)"
+    choices$rests_on[i2] <- "the same subjects were sampled at several timepoints"
+    for (k in which(i4)) {
+      den <- !is.null(lc$layers[[choices$layer[k]]]$spec$denominators)
+      choices$default_id[k] <- choices$final_id[k] <- if (den) "L02" else "D09re"
+      choices$default_method[k] <- if (den) "negative binomial mixed model, denominator as offset (glmmTMB)" else "LinDA with a subject random effect"
+      choices$rests_on[k] <- sprintf("the same subjects were sampled at several timepoints; %s", if (den) "the layer has a denominator" else "the layer has no denominator")
+    }
+    choices <- rbind(choices, data.frame(layer = unique(choices$layer), question = "Q6", default_id = "L01/L02", default_method = "time contrasts within each group from the Q2 and Q4 mixed models; PERMANOVA with permutations within subject",
+                                         rests_on = "the same subjects were sampled at several timepoints", default_eligible = "yes", override = "not applicable", final_id = "L01/L02", rule = "design section 5.2, S1 longitudinal table"))
+    write_csv(choices, file.path(out, "02_method_choice", "choices.csv"))
+  }
   q0 <- q0_contaminants(lc$layers, des)
   if (!is.null(q0)) write_csv(q0, file.path(out, "03_results", "Q0_contaminants", "results.csv"))
-  a2 <- q2_agreement(units, lc$layers)
+  a2 <- q2_agreement(units, lc$layers, des)
+  if (long) {
+    q2l <- q2_long(lus, q2$per_sample, des)
+    if (!is.null(q2l$results)) q2$results <- q2l$results
+    q2$diagnostics <- q2l$diagnostics
+  }
   if (!is.null(q2$results)) q2$results <- agreement_labels(q2$results, a2, c("layer", "predictor", "contrast", "timepoint", "block", "q_order"))
+  if (!is.null(q2$diagnostics)) write_csv(q2$diagnostics, file.path(qdir, "diagnostics.csv"))
   if (!is.null(q2$results)) write_csv(q2$results, file.path(qdir, "results.csv"))
-  q3 <- q3_composition(units, lc$layers)
+  q3 <- q3_composition(units, lc$layers, des)
   if (!is.null(q3$results)) q3$results <- agreement_labels(q3$results, q3$agreement[q3$agreement$role == "agreement", ],
                                                            c("layer", "predictor", "contrast", "timepoint", "block"), directional = FALSE)
   # The override rule (design 5.3): checks each Q4 default on simulated data
   # from the reference samples, and switches only if it fails (C13).
-  ov <- run_override(units, lc$layers, choices, considered, des, bundle)
+  ov <- if (!long) run_override(units, lc$layers, choices, considered, des, bundle) else long_override_note(units, lc$layers, choices, des, bundle, considered)
   w0 <- function(x, ...) if (!is.null(x)) write_csv(x, file.path(out, ...))
   w0(ov$decisions, "02_method_choice", "override.csv"); w0(ov$calibration, "02_method_choice", "simulation", "calibration.csv")
   w0(ov$per_rep, "02_method_choice", "simulation", "per_dataset.csv")
@@ -90,9 +116,20 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
     }, "")
     write_csv(choices, file.path(out, "02_method_choice", "choices.csv"))
   }
-  q4 <- q4_abundance(units, lc$layers, choices, ov$decisions)
+  if (long) {
+    q4 <- q4_long(lus, lc$layers, des, choices)
+    # Q7 per timepoint, ranked by the mixed model's per-timepoint z-scores.
+    q4$for_q7 <- Filter(Negate(is.null), lapply(units, function(u) {
+      if (!u$testable || is.null(q4$results)) return(NULL)
+      r <- q4$results[q4$results$layer == u$layer & q4$results$predictor == u$predictor & q4$results$contrast == u$contrast &
+                      q4$results$timepoint == u$timepoint & q4$results$block == u$block, ]
+      if (!nrow(r)) return(NULL)
+      z <- sign(r$effect) * stats::qnorm(pmax(r$p, 1e-300) / 2, lower.tail = FALSE)
+      list(unit = u, stat = stats::setNames(z, r$feature)[is.finite(z)], ud = unit_data(u, lc$layers[[u$layer]], des), feats = r$feature)
+    }))
+  } else q4 <- q4_abundance(units, lc$layers, choices, ov$decisions, des)
   if (!is.null(q4$results)) q4$results <- agreement_labels(q4$results, q4$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
-  q5 <- q5_presence(units, lc$layers)
+  q5 <- q5_presence(units, lc$layers, des)
   if (!is.null(q5$results)) q5$results <- agreement_labels(q5$results, q5$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
   q7 <- q7_sets(q4$for_q7, lc$layers)
   if (!is.null(q7$results)) q7$results <- agreement_labels(q7$results, q7$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "set_column", "feature"))
@@ -103,7 +140,16 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
   w(a2, "04_agreement", "Q2.csv"); w(q3$agreement, "04_agreement", "Q3.csv"); w(q4$agreement, "04_agreement", "Q4.csv")
   w(q4$describe, "04_agreement", "Q4_describe_only.csv"); w(q5$agreement, "04_agreement", "Q5.csv"); w(q7$agreement, "04_agreement", "Q7.csv")
 
-  res <- list(q0 = q0, q2 = q2, q3 = q3, q4 = q4, q5 = q5, q7 = q7, override = ov)
+  q6 <- NULL
+  if (long) {
+    q6 <- list(alpha = q2l$change, features = q4$change, composition = q6_composition(lus, lc$layers))
+    a6a <- change_agreement_alpha(lus, q2$per_sample); a6f <- change_agreement_features(lus, lc$layers)
+    if (!is.null(q6$alpha)) q6$alpha <- agreement_labels(q6$alpha, a6a, c("layer", "predictor", "group", "change", "block", "q_order"))
+    if (!is.null(q6$features)) q6$features <- agreement_labels(q6$features, a6f, c("layer", "predictor", "group", "change", "block", "feature"))
+    w(q6$alpha, "03_results", "Q6_change", "alpha.csv"); w(q6$features, "03_results", "Q6_change", "features.csv")
+    w(q6$composition, "03_results", "Q6_change", "composition.csv"); w(a6a, "04_agreement", "Q6_alpha.csv"); w(a6f, "04_agreement", "Q6_features.csv")
+  }
+  res <- list(q0 = q0, q2 = q2, q3 = q3, q4 = q4, q5 = q5, q7 = q7, q6 = q6, override = ov, long = long)
   leads <- build_leads(res, lc$layers, des)
   write_csv(leads, file.path(out, "05_leads", "leads.csv"))
 

@@ -3,7 +3,7 @@
 # approved on 2026-10-29. Changing one is a new engine version, logged in
 # CLAUDE.md. These rules decide whether a METHOD suits the data; they never
 # decide what a metadata column is (that comes only from the column guide).
-rules_version: "2026-10-29.4"
+rules_version: "2026-10-30.1"
 rules:
   R-PREV:   {value: 0.10, reason: "Feature kept for per-feature tests if present in at least this share of samples in at least one group", source: "rule of thumb, unverified"}
   R-MINGRP: {value: 3,    reason: "Smallest group size for any test; below it, description and effect sizes only", source: "rule of thumb, unverified"}
@@ -28,3 +28,5 @@ rules:
   R-SEED:   {value: 20261029, reason: "Seed for every step that uses random numbers; each step adds a fixed offset", source: "engine convention"}
   R-EXCESS: {value: 0.05, reason: "A whole comparison moves down the fallback ladder when a one-sided binomial test says more features failed their checks than chance would give, at this p-value (CLAUDE.md D17)", source: "user decision, 2026-10-29"}
   R-CHANCEREP: {value: 20, reason: "Clean data sets simulated per comparison to measure how often its residual checks fail by chance (CLAUDE.md D21)", source: "engine convention"}
+  R-SPP:    {value: 5,    reason: "Fewest samples per fixed-effect parameter before adjustment terms are dropped (batch only, then none; CLAUDE.md D24)", source: "rule of thumb, unverified"}
+  R-CHANCEFEAT: {value: 50, reason: "Most features simulated when measuring the mixed model checks' chance failure rate (a mixed model per feature is slow; CLAUDE.md D26)", source: "engine convention"}

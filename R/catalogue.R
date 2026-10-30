@@ -5,7 +5,7 @@
 # only removes methods, by hard requirements in a fixed order; it never picks
 # one. Picking is the default table (design section 5.2), in choose_methods().
 
-BUILT <- c("E1", "E2", "E3", "E4")   # milestones whose methods this engine version runs
+BUILT <- c("E1", "E2", "E3", "E4", "E5")   # milestones whose methods this engine version runs
 
 catalogue <- function() utils::read.csv(system.file("catalogue", "methods.csv", package = "seqcompendium"), colClasses = "character",
                                         check.names = FALSE, na.strings = character(0))

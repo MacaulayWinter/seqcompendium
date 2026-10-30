@@ -23,23 +23,45 @@
 #'   group, one timepoint, 2 mocks with a known composition: enough reference
 #'   samples for the override rule's simulation, E4) and "calib_mocks6" (the
 #'   same with 6 mocks, so the shuffled-label mock test can run).
+#'   E5 (longitudinal; the same subjects at every timepoint): "long_planted"
+#'   (toyG06-08 at 8 times the mean in treated samples at T1 only),
+#'   "long_div" (treated samples' reads concentrated in 3 features at T1 only),
+#'   "few_subjects" (2 subjects per group), "long40" (20 subjects per group),
+#'   "long4tp" (4 timepoints), "long_zeroinfl" (40 subjects; 15 features with extra
+#'   structural zeros; 50 percent in "long_zeroinfl"). E5 (adjustment, one timepoint, 20 subjects): "adjust"
+#'   (a second predictor `diet`, unbalanced across groups, carries the planted
+#'   effect on toyG06-08) and "confounded_batch" (batch identical to group).
+#'   "main" and "no_controls" are longitudinal too; every other variant gives
+#'   each sample its own subject, so it is a snapshot design.
 #'   In every variant with controls, toyG26-30 are contaminants: common in the
 #'   blanks, rare in study samples.
 #' @param seed random seed.
 #' @return the bundle folder, invisibly.
 #' @export
 make_toy_bundle <- function(dir, variant = c("main", "no_controls", "copy_null", "planted", "planted_da", "spread", "zeroinfl_few",
-                                             "zeroinfl_many", "presence", "no_denominator", "proportions", "calib", "calib_mocks6"), seed = 20261029L) {
+                                             "zeroinfl_many", "presence", "no_denominator", "proportions", "calib", "calib_mocks6",
+                                             "long_planted", "long_div", "few_subjects", "long40", "long4tp", "long_zeroinfl",
+                                             "adjust", "confounded_batch"), seed = 20261029L) {
   variant <- match.arg(variant)
   set.seed(seed)
   n_f <- 30
   feats <- sprintf("toyG%02d", seq_len(n_f))
   calib <- variant %in% c("calib", "calib_mocks6")
-  subj <- sprintf("S%02d", seq_len(if (calib) 20 else 12))
+  one_time <- variant %in% c("calib", "calib_mocks6", "adjust", "confounded_batch")
+  paired <- variant %in% c("main", "no_controls", "long_planted", "long_div", "few_subjects", "long40", "long4tp", "long_zeroinfl")
+  n_subj <- if (one_time) 20 else switch(variant, long40 = 40, long_zeroinfl = 40, few_subjects = 4, 12)
+  times <- if (one_time) "T0" else if (variant == "long4tp") sprintf("T%d", 0:3) else c("T0", "T1")
+  subj <- sprintf("S%02d", seq_len(n_subj))
   group <- if (variant == "spread") rep(c("control", "treated"), c(9, 3)) else rep(c("control", "treated"), each = length(subj) / 2)
-  study <- expand.grid(t = if (calib) "T0" else c("T0", "T1"), s = seq_along(subj), stringsAsFactors = FALSE)
+  study <- expand.grid(t = times, s = seq_along(subj), stringsAsFactors = FALSE)
   md <- data.frame(sample = sprintf("%s_%s", subj[study$s], study$t), subject = subj[study$s], group = group[study$s],
                    day = study$t, run = ifelse(study$s %% 2 == 1, "run1", "run2"), kind = "none", stringsAsFactors = FALSE)
+  if (variant == "confounded_batch") md$run <- ifelse(md$group == "control", "run1", "run2")
+  if (variant == "adjust") {
+    # diet unbalanced across group: 8 of 10 treated subjects high-fat, 2 of 10 controls.
+    k <- (study$s - 1) %% 10
+    md$diet <- ifelse((md$group == "treated" & k < 8) | (md$group == "control" & k < 2), "high", "low")
+  }
   mu <- exp(stats::rnorm(n_f, 3, 1.2))
   depth <- stats::runif(nrow(md), 0.5, 2)
   mu[26:30] <- 0.15   # contaminants: rare in study samples
@@ -53,6 +75,10 @@ make_toy_bundle <- function(dir, variant = c("main", "no_controls", "copy_null",
     zf <- if (variant == "zeroinfl_few") 9:11 else 9:23
     for (k in zf) counts[stats::runif(nrow(md)) < (if (variant == "zeroinfl_few") 0.6 else 0.7), k] <- 0
   }
+  if (variant == "long_planted") { i <- which(treated & md$day == "T1"); counts[i, 6:8] <- t(vapply(i, function(j) stats::rnbinom(3, mu = 8 * mu[6:8] * depth[j], size = 2), numeric(3))) }
+  if (variant == "long_div") for (j in which(treated & md$day == "T1")) counts[j, ] <- stats::rnbinom(n_f, mu = c(rep(400, 3), rep(0.3, n_f - 3)) * depth[j], size = 2)
+  if (variant == "long_zeroinfl") for (k in 9:23) counts[stats::runif(nrow(md)) < 0.5, k] <- 0
+  if (variant == "adjust") { i <- which(md$diet == "high"); counts[i, 6:8] <- t(vapply(i, function(j) stats::rnbinom(3, mu = 6 * mu[6:8] * depth[j], size = 2), numeric(3))) }
   if (variant == "presence") { counts[!treated, 15] <- 0; counts[treated, 15] <- stats::rnbinom(sum(treated), mu = 50, size = 5) + 1 }
   if (variant == "copy_null") {
     # Treated subject k (7-12) at time t is an exact copy of control subject k-6 at time t.
@@ -69,6 +95,7 @@ make_toy_bundle <- function(dir, variant = c("main", "no_controls", "copy_null",
     # The mock: 8 known members at equal abundance (toyG01-08).
     mock <- function() if (n_mock == 1) c(rep(200, 8), rep(0, n_f - 8)) else c(stats::rnbinom(8, mu = 200, size = 50), rep(0, n_f - 8))
     counts <- rbind(counts, blank(), blank(), t(vapply(seq_len(n_mock), function(i) mock(), numeric(n_f))))
+    if (!is.null(md$diet)) ctl$diet <- NA
     md <- rbind(md, ctl)
   }
   if (variant == "no_controls") md$kind <- NULL
@@ -77,12 +104,16 @@ make_toy_bundle <- function(dir, variant = c("main", "no_controls", "copy_null",
   dir.create(file.path(dir, "metadata"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dir, "layers"), recursive = TRUE, showWarnings = FALSE)
   tsv <- function(x, f) utils::write.table(x, file.path(dir, f), sep = "\t", quote = FALSE, row.names = FALSE, na = "")
+  # Snapshot variants: each sample is its own subject, so no subject is
+  # sampled twice (CLAUDE.md D26).
+  if (!paired) md$subject <- ifelse(is.na(md$subject), NA, paste0(md$subject, "_", md$day))
   tsv(md, "metadata/study_metadata.tsv")
   guide <- data.frame(column = c("subject", "group", "day", "run", "kind"),
                       role = c("subject_id", "predictor", "time", "batch", "sample_control"),
                       type = c("text", "categorical", "ordinal", "categorical", "categorical"),
-                      levels = c("", "control|treated", "T0|T1", "run1|run2", "none|negative_extraction|positive_mock"),
+                      levels = c("", "control|treated", paste(if (variant == "long4tp") times else c("T0", "T1"), collapse = "|"), "run1|run2", "none|negative_extraction|positive_mock"),
                       description = c("toy subject", "toy treatment group", "toy sampling time", "toy extraction run", "control samples (F8)"))
+  if (variant == "adjust") guide <- rbind(guide, data.frame(column = "diet", role = "predictor", type = "categorical", levels = "low|high", description = "toy diet"))
   if (variant == "no_controls") guide <- guide[guide$column != "kind", ]
   utils::write.csv(guide, file.path(dir, "metadata/column_guide.csv"), row.names = FALSE, na = "")
   values <- if (variant == "proportions") round(counts / pmax(rowSums(counts), 1), 8) else counts

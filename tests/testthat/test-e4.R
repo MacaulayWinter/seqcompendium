@@ -1,7 +1,7 @@
 # E4 pass marks (CLAUDE.md D19): the override rule and the mock check.
 
 test_that("E4-M2: too few reference samples keeps the default and says why", {
-  x <- run_fixture("main")
+  x <- run_fixture("planted_da")   # snapshot, 6 per group (main is longitudinal since E5, D26)
   ov <- res_csv(x, "02_method_choice/override.csv")
   expect_true(all(ov$decision == "not run: reference group n = 6, fewer than 10 (rule R-MINSIM)" & ov$final_id == ov$default_id))
   ch <- res_csv(x, "02_method_choice/choices.csv")

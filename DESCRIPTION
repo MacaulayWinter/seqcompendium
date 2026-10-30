@@ -1,6 +1,6 @@
 Package: seqcompendium
 Title: The Compendium Engine for the seq- Pipeline Family
-Version: 0.0.0.9004
+Version: 0.0.0.9005
 Authors@R: person("Macaulay", "Winter", role = c("aut", "cre"),
     email = "108404294+MacaulayWinter@users.noreply.github.com")
 Description: Takes a samples x features table, the study metadata and the
@@ -22,16 +22,21 @@ Imports:
     digest,
     DivNet,
     fgsea,
+    geepack,
     ggplot2,
+    glmmTMB,
     iNEXT,
     lefser,
     limma,
+    lmerTest,
     logistf,
     MASS,
+    mgcv,
     microbiome,
     MicrobiomeStat,
     MIDASim,
     mvabund,
+    permute,
     pscl,
     S4Vectors,
     stats,

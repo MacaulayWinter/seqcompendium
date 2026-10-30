@@ -13,26 +13,37 @@
 
 fit_deseq2 <- function(ud, feats) {
   cts <- t(round(ud$m[, feats, drop = FALSE]))
-  dds <- DESeq2::DESeqDataSetFromMatrix(cts, data.frame(g = ud$g), ~ g)
+  cd <- if (is.null(ud$cov)) data.frame(g = ud$g) else data.frame(ud$cov, g = ud$g)
+  dds <- DESeq2::DESeqDataSetFromMatrix(cts, cd, stats::as.formula(paste("~", cov_terms(ud$cov), "g")))
   off <- offset_of(ud)
   DESeq2::sizeFactors(dds) <- off / exp(mean(log(off)))
   dds <- suppressMessages(DESeq2::DESeq(dds, quiet = TRUE, minReplicatesForReplace = Inf))
-  r <- DESeq2::results(dds, name = DESeq2::resultsNames(dds)[2], cooksCutoff = FALSE, independentFiltering = FALSE)
+  r <- DESeq2::results(dds, name = grep("^g_", DESeq2::resultsNames(dds), value = TRUE)[1], cooksCutoff = FALSE, independentFiltering = FALSE)
   data.frame(feature = rownames(r), effect = r$log2FoldChange, se = r$lfcSE, stat = r$stat, p = r$pvalue,
              effect_unit = "log2 fold change, per unit of the denominator")
 }
 
 fit_linda <- function(ud, feats) {
   res <- suppressMessages(suppressWarnings(utils::capture.output(
-    out <- MicrobiomeStat::linda(feature.dat = t(ud$m[, feats, drop = FALSE]), meta.dat = data.frame(g = ud$g, row.names = ud$samples),
-                                 formula = "~ g", feature.dat.type = "count", prev.filter = 0, mean.abund.filter = 0, max.abund.filter = 0))))
-  r <- out$output[[1]]
+    out <- MicrobiomeStat::linda(feature.dat = t(ud$m[, feats, drop = FALSE]),
+                                 meta.dat = if (is.null(ud$cov)) data.frame(g = ud$g, row.names = ud$samples) else data.frame(ud$cov, g = ud$g, row.names = ud$samples),
+                                 formula = paste("~", cov_terms(ud$cov), "g"), feature.dat.type = "count", prev.filter = 0, mean.abund.filter = 0, max.abund.filter = 0))))
+  r <- out$output[[grep("^g", names(out$output))[1]]]
   data.frame(feature = rownames(r), effect = r$log2FoldChange, se = r$lfcSE, stat = r$stat, p = r$pvalue,
              effect_unit = "log2 fold change (LinDA, bias-corrected CLR)")
 }
 
 fit_aldex2 <- function(ud, feats) {
   set.seed(seed_for(41))
+  if (!is.null(ud$cov)) {
+    # With covariates (D24): ALDEx2's model-matrix route, coefficient of g.
+    mm <- stats::model.matrix(stats::as.formula(paste("~", cov_terms(ud$cov), "g")), data.frame(ud$cov, g = ud$g))
+    cl <- suppressMessages(ALDEx2::aldex.clr(as.data.frame(t(ud$m[, feats, drop = FALSE])), mm, mc.samples = 128, denom = "all", verbose = FALSE))
+    gl <- suppressMessages(ALDEx2::aldex.glm(cl, mm))
+    k <- paste0("g", levels(ud$g)[2])   # ALDEx2 1.44 names: "<term>:Est", ":SE", ":t.val", ":pval"
+    return(data.frame(feature = rownames(gl), effect = gl[[paste0(k, ":Est")]], se = gl[[paste0(k, ":SE")]], stat = gl[[paste0(k, ":t.val")]],
+                      p = gl[[paste0(k, ":pval")]], effect_unit = "CLR coefficient (ALDEx2 GLM, adjusted)"))
+  }
   x <- suppressMessages(ALDEx2::aldex(as.data.frame(t(ud$m[, feats, drop = FALSE])), as.character(ud$g), mc.samples = 128, test = "t",
                                       effect = TRUE, denom = "all", verbose = FALSE))
   data.frame(feature = rownames(x), effect = x$diff.btw, se = NA_real_, stat = x$effect, p = x$we.ep, effect_unit = "difference in median CLR")
@@ -41,8 +52,8 @@ fit_aldex2 <- function(ud, feats) {
 fit_ancombc2 <- function(ud, feats) {
   set.seed(seed_for(42))
   tse <- TreeSummarizedExperiment::TreeSummarizedExperiment(assays = list(counts = t(ud$m[, feats, drop = FALSE])),
-                                                            colData = S4Vectors::DataFrame(g = ud$g, row.names = ud$samples))
-  out <- suppressMessages(suppressWarnings(ANCOMBC::ancombc2(data = tse, assay_name = "counts", fix_formula = "g", p_adj_method = "BH",
+                                                            colData = if (is.null(ud$cov)) S4Vectors::DataFrame(g = ud$g, row.names = ud$samples) else S4Vectors::DataFrame(ud$cov, g = ud$g, row.names = ud$samples))
+  out <- suppressMessages(suppressWarnings(ANCOMBC::ancombc2(data = tse, assay_name = "counts", fix_formula = paste0(cov_terms(ud$cov), "g"), p_adj_method = "BH",
                                                              prv_cut = 0, lib_cut = 0, s0_perc = 0.05, struc_zero = FALSE, neg_lb = FALSE,
                                                              alpha = rule("R-FDR"), global = FALSE, pairwise = FALSE, verbose = FALSE)))
   r <- out$res; k <- paste0("g", levels(ud$g)[2])
@@ -67,12 +78,13 @@ fit_welch_clr <- function(ud, feats) {
 }
 
 fit_zinb <- function(ud, f) {
-  y <- round(ud$m[, f]); off <- log(offset_of(ud)); g <- ud$g
-  fit <- tryCatch(suppressWarnings(pscl::zeroinfl(y ~ g + offset(off) | 1, dist = "negbin")), error = function(e) NULL)
+  d <- data.frame(y = round(ud$m[, f]), off = log(offset_of(ud)), g = ud$g); if (!is.null(ud$cov)) d <- cbind(d, ud$cov)
+  fit <- tryCatch(suppressWarnings(pscl::zeroinfl(stats::as.formula(paste("y ~", cov_terms(ud$cov), "g + offset(off) | 1")), data = d, dist = "negbin")), error = function(e) NULL)
   if (is.null(fit)) return(NULL)
   co <- summary(fit)$coefficients$count
-  if (nrow(co) < 2 || !is.finite(co[2, 4])) return(NULL)
-  data.frame(feature = f, effect = co[2, 1] / log(2), se = co[2, 2] / log(2), stat = co[2, 3], p = co[2, 4],
+  k <- grep("^g", rownames(co))[1]
+  if (is.na(k) || !is.finite(co[k, 4])) return(NULL)
+  data.frame(feature = f, effect = co[k, 1] / log(2), se = co[k, 2] / log(2), stat = co[k, 3], p = co[k, 4],
              effect_unit = "log2 fold change (zero-inflated NB, count part)")
 }
 
@@ -88,8 +100,8 @@ fit_perm_clr <- function(ud, f) {
 # Residual checks. Count default: DHARMa on a negative binomial refit with the
 # same offset. LinDA: skewness and spread of the CLR linear model's residuals.
 check_nb <- function(ud, f, k) {
-  y <- round(ud$m[, f]); off <- log(offset_of(ud)); g <- ud$g
-  fit <- tryCatch(suppressWarnings(MASS::glm.nb(y ~ g + offset(off))), error = function(e) NULL)
+  d <- data.frame(y = round(ud$m[, f]), off = log(offset_of(ud)), g = ud$g); if (!is.null(ud$cov)) d <- cbind(d, ud$cov)
+  fit <- tryCatch(suppressWarnings(MASS::glm.nb(stats::as.formula(paste("y ~", cov_terms(ud$cov), "g + offset(off)")), data = d)), error = function(e) NULL)
   if (is.null(fit)) return(data.frame(feature = f, check = "negative binomial refit", uniformity_p = NA, dispersion_p = NA, zero_inflation_p = NA,
                                       failed = TRUE, why = "the negative binomial refit for the check did not converge"))
   sim <- DHARMa::simulateResiduals(fit, n = 250, seed = seed_for(1000 + k), plot = FALSE)
@@ -104,7 +116,7 @@ check_nb <- function(ud, f, k) {
 
 check_lm_clr <- function(ud, f) {
   z <- clr(ud$m)[, f]; g <- ud$g
-  r <- z - stats::ave(z, g)
+  r <- if (is.null(ud$cov)) z - stats::ave(z, g) else stats::residuals(stats::lm(stats::as.formula(paste("z ~", cov_terms(ud$cov), "g")), data.frame(z = z, g = g, ud$cov)))
   sk <- if (stats::sd(r) > 0) mean(r^3) / stats::sd(r)^3 else 0
   v <- tapply(r, g, stats::var); vr <- if (min(v) > 0) max(v) / min(v) else Inf
   why <- c(if (abs(sk) > rule("R-SKEW")) sprintf("residual skewness %.2f", sk), if (vr > rule("R-VARRATIO")) sprintf("group variance ratio %.1f", vr))
@@ -114,8 +126,8 @@ check_lm_clr <- function(ud, f) {
 
 FITS <- list(D01 = fit_deseq2, D09 = fit_linda, D04 = fit_aldex2, D06 = fit_ancombc2, D17 = fit_wilcoxon_clr)
 
-q4_unit <- function(u, layer, default_id) {
-  ud <- unit_data(u, layer)
+q4_unit <- function(u, layer, default_id, des = NULL) {
+  ud <- unit_data(u, layer, des)
   if (default_id == "D01" && (anyNA(ud$den) || any(ud$den <= 0)))
     return(list(skip = "a denominator is missing or zero for a sample in this comparison"))
   feats <- prevalent(ud$m, ud$g)
@@ -133,6 +145,8 @@ q4_unit <- function(u, layer, default_id) {
     res$q <- NA_real_; res$q[ok] <- stats::p.adjust(res$p[ok], "BH")
     res$status <- ifelse(!ok, "not_testable", ifelse(res$q <= rule("R-FDR"), "lead", "no_evidence"))
     res$method_id <- default_id; res$n_reference <- length(u$ref_samples); res$n_level <- length(u$level_samples)
+  # D24: what the result was adjusted for; methods that cannot adjust say so.
+  res$adjusted_for <- ifelse(res$method_id %in% c("D17", "K01", "K04"), "not adjusted (this method cannot adjust for covariates)", ud$adjusted_for)
     res$share_expected_by_chance <- NA_real_; res$excess_failures_p <- NA_real_
     return(list(results = res, checks = NULL, share_failed = NA_real_, whole = FALSE, feats = feats, ud = ud))
   }
@@ -152,8 +166,8 @@ q4_unit <- function(u, layer, default_id) {
                                  alternative = "greater")$p.value
   whole <- excess_p < rule("R-EXCESS")
   chance_note <- sprintf(
-    "on clean data simulated from this comparison's own features, about %.1f%% of features fail these residual checks by chance; here %d of %d features failed (about %.1f expected by chance), so this feature may have moved by chance. Its result is still valid: it comes from a method that assumes less",
-    100 * chance, sum(chk$failed), length(feats), chance * length(feats))
+    "on clean data simulated from this comparison's own features, about %.1f%% of features fail these residual checks by chance; here %d of %d features failed (about %.1f expected by chance), %s. Its result is still valid: it comes from a method that assumes less",
+    100 * chance, sum(chk$failed), length(feats), chance * length(feats), chance_verdict(excess_p))
   rung1 <- if (count_model) function(f) fit_zinb(ud, f) else function(f) fit_welch_clr(ud, f)
   rung2 <- if (count_model) function(f) fit_perm_clr(ud, f) else function(f) { r <- fit_wilcoxon_clr(ud, f); r$effect_unit <- "difference in mean CLR (Wilcoxon)"; r }
   rung1_name <- if (count_model) "zero-inflated negative binomial (R02)" else "Welch t-test on CLR"
@@ -184,6 +198,8 @@ q4_unit <- function(u, layer, default_id) {
   res$status <- ifelse(!ok, "not_testable", ifelse(res$q <= rule("R-FDR"), "lead", "no_evidence"))
   res$method_id <- ifelse(res$rung == 0, default_id, ifelse(res$rung == 1, if (count_model) "R02" else "K01", if (count_model) "K04" else "D17"))
   res$n_reference <- length(u$ref_samples); res$n_level <- length(u$level_samples)
+  # D24: what the result was adjusted for; methods that cannot adjust say so.
+  res$adjusted_for <- ifelse(res$method_id %in% c("D17", "K01", "K04"), "not adjusted (this method cannot adjust for covariates)", ud$adjusted_for)
   res$share_expected_by_chance <- chance; res$excess_failures_p <- excess_p
   list(results = res, checks = chk, share_failed = share, whole = whole, feats = feats, ud = ud)
 }
@@ -212,7 +228,7 @@ describe_lefse <- function(ud, feats) {
   data.frame(feature = r$features, lda_score = r$scores, note = "")
 }
 
-q4_abundance <- function(units, layers, choices, decisions = NULL) {
+q4_abundance <- function(units, layers, choices, decisions = NULL, des = NULL) {
   res <- list(); chk <- list(); agr <- list(); desc <- list(); notes <- list(); stats_for_q7 <- list()
   for (i in seq_along(units)) {
     u <- units[[i]]; L <- layers[[u$layer]]
@@ -222,7 +238,7 @@ q4_abundance <- function(units, layers, choices, decisions = NULL) {
     if (!u$testable) { notes[[length(notes) + 1]] <- cbind(key, reason = u$reason); next }
     d <- if (is.null(decisions)) NULL else merge(key, decisions, by = names(key))
     final <- if (!is.null(d) && nrow(d)) d$final_id[1] else ch$final_id
-    x <- q4_unit(u, L, final)
+    x <- q4_unit(u, L, final, des)
     if (!is.null(x$skip)) { notes[[length(notes) + 1]] <- cbind(key, reason = x$skip); next }
     if (!is.null(d) && nrow(d)) {
       if (final != ch$final_id) x$results$method_role <- ifelse(x$results$method_role == "default", "override", x$results$method_role)
@@ -271,3 +287,8 @@ chance_failure_rate <- function(ud, feats, count_model) {
   if (total == 0) return(list(rate = NA_real_, failed = 0, total = 0))
   list(rate = failed / total, failed = failed, total = total)
 }
+
+# Says whether a comparison's check failures are within chance (D16, D22).
+chance_verdict <- function(excess_p) if (is.finite(excess_p) && excess_p < rule("R-EXCESS"))
+  "clearly more than chance would give, so the default model does not suit these data well" else
+  "which is within what chance gives, so this feature may have moved by chance"
