@@ -188,8 +188,10 @@ write_provenance <- function(out, b) {
   pk <- c("seqcompendium", "iNEXT", "ggplot2", "yaml", "digest", "rmarkdown")
   v <- vapply(pk, function(x) tryCatch(as.character(utils::packageVersion(x)), error = function(e) "not installed"), "")
   writeLines(c(sprintf("%s %s", pk, v), "", utils::capture.output(print(utils::sessionInfo()))), file.path(p, "session_info.txt"))
-  yaml::write_yaml(list(engine = "seqcompendium", engine_version = ENGINE_VERSION(), milestone = "E1", rules_version = rules()$rules_version,
-                        r_version = as.character(getRversion()), seeds = "none used", run_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
+  yaml::write_yaml(list(engine = "seqcompendium", engine_version = ENGINE_VERSION(), rules_version = rules()$rules_version,
+                        r_version = as.character(getRversion()),
+                        seeds = list(engine = sprintf("R-SEED %d; each step adds a fixed offset", rule("R-SEED")),
+                                     bundle = b$manifest$produced_by$seed %||% "not stated by the bundle"), run_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
                    file.path(p, "engine.yaml"))
   f <- file.path(b$path, b$inputs)
   writeLines(sprintf("%s  %s", vapply(f, function(x) digest::digest(file = x, algo = "sha256"), ""), b$inputs), file.path(p, "inputs.sha256"))
