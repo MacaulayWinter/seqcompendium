@@ -13,7 +13,7 @@ invented_template <- function(seed = 1, n = 40, p = 120) {
 }
 FIT <- local({ m <- invented_template(); fit_template(m, reads = stats::setNames(rowSums(m) * 3, rownames(m))) })
 
-m1_ratio <- function(fit, fc, draws = 50, n = 50) {
+m1_ratio <- function(fit, fc, draws = 200, n = 50) {
   # The ratio of mean absolute abundances, pooled over the draws (a mean of
   # per-draw ratios is biased upward by heavy-tailed counts; CLAUDE.md D35).
   smp <- design_samples("two_group", n); pl <- fit$common[1:6]
@@ -28,7 +28,7 @@ m1_ratio <- function(fit, fc, draws = 50, n = 50) {
 }
 
 test_that("E7-M1: planted features shift by the fold change on the absolute scale; others do not", {
-  for (seed in c(1, 2)) {   # seed 2: the fresh-data confirmation (D35)
+  for (seed in c(1, 2, 3)) {   # seeds 2 and 3: fresh-data confirmation (D35)
     fit <- if (seed == 1) FIT else local({ m <- invented_template(seed); fit_template(m) })
     x <- m1_ratio(fit, fc = 2)
     expect_true(all(abs(x$r[x$pl] / 2 - 1) <= 0.10), info = paste(seed, paste(round(x$r[x$pl], 3), collapse = " ")))

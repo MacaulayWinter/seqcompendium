@@ -42,9 +42,10 @@ choose_16s <- function(datasets, samples, how_many = 2, skip = 0) {
   d <- datasets[datasets$is_16S %in% TRUE, , drop = FALSE]                                                            # step 1
   pick <- list()
   for (i in seq_len(nrow(d))) {                                                                                       # step 2
+    s <- samples[samples$dataset == d$dataset[i], , drop = FALSE]
+    if (nrow(s) < 20) next     # no grouping can give a group of 20, so step 2 drops it whatever the column (D36)
     g <- d$grouping[i]
     if (is.na(g) || !nzchar(g)) doubt("16S step 2: the documentation names no grouping column for dataset %s.", d$dataset[i])
-    s <- samples[samples$dataset == d$dataset[i], , drop = FALSE]
     if (!g %in% names(s)) doubt("16S step 2: dataset %s's grouping column `%s` is not in its sample metadata.", d$dataset[i], g)
     tb <- table(s[[g]]); if (!length(tb)) next
     top <- c_sort(names(tb)[tb == max(tb)])[1]     # ties: the first level in C-locale order
