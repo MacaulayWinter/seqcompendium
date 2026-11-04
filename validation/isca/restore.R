@@ -8,7 +8,7 @@ repos <- c(CRAN = sprintf("https://p3m.dev/cran/%s", s),
            BioCexp = sprintf("https://p3m.dev/bioconductor/%s/packages/3.23/data/experiment", s))
 options(repos = repos, Ncpus = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", "4")))
 lib <- Sys.getenv("R_LIBS_USER"); .libPaths(c(lib, .libPaths()))
-if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv", lib = lib)
+for (p in c("renv", "jsonlite")) if (!requireNamespace(p, quietly = TRUE)) install.packages(p, lib = lib)   # restore then puts the locked versions in place
 want <- list()
 for (lf in locks) {
   j <- jsonlite::read_json(lf)

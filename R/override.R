@@ -180,7 +180,7 @@ run_override <- function(units, layers, choices, considered, des, bundle_dir) {
                       default_fdr = x$summary$fdr[x$summary$method_id == ch$final_id], limit = rule("R-CAL") * rule("R-FDR"),
                       datasets = simrep(), caveat = d$caveat, mde_log2 = md$mde, mde_note = md$note)
   }
-  bind <- function(l) { l <- Filter(Negate(is.null), l); if (length(l)) do.call(rbind, l) else NULL }
+  bind <- bind_rows
   list(decisions = bind(dec), calibration = bind(cal), per_rep = bind(reps), mock = mk)
 }
 

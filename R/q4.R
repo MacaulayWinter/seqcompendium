@@ -256,7 +256,7 @@ q4_abundance <- function(units, layers, choices, decisions = NULL, des = NULL) {
     z <- with(x$results, sign(effect) * stats::qnorm(pmax(p, 1e-300) / 2, lower.tail = FALSE))
     stats_for_q7[[i]] <- list(unit = u, stat = stats::setNames(z, x$results$feature)[is.finite(z)], ud = x$ud, feats = x$feats)
   }
-  bind <- function(l) { l <- Filter(Negate(is.null), l); if (length(l)) do.call(rbind, l) else NULL }
+  bind <- bind_rows
   list(results = bind(res), checks = bind(chk), agreement = bind(agr), describe = bind(desc), skipped = bind(notes),
        for_q7 = Filter(Negate(is.null), stats_for_q7))
 }

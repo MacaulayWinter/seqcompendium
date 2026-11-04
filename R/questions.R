@@ -1,7 +1,13 @@
 # questions.R: Q0, Q3, Q5 and Q7 (design sections 5.2 and 6), and the Q2
 # agreement set. S1 counts, each timepoint and block on its own.
 
-bind_rows <- function(l) { l <- Filter(Negate(is.null), l); if (length(l)) do.call(rbind, l) else NULL }
+# Row-binds tables that may differ in columns (one comparison can take a
+# fallback with extra columns); a missing column is NA (CLAUDE.md D38).
+bind_rows <- function(l) {
+  l <- Filter(Negate(is.null), l); if (!length(l)) return(NULL)
+  cols <- unique(unlist(lapply(l, names)))
+  do.call(rbind, lapply(l, function(x) { for (k in setdiff(cols, names(x))) x[[k]] <- NA; x[cols] }))
+}
 
 # Q0: which features look like contaminants? decontam's prevalence method,
 # negative controls (F8) against study samples. Flagged features are never

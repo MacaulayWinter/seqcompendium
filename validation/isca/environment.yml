@@ -7,7 +7,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - r-base=4.6.1=h502d0c9_1
+  - r-base=4.6.1=*_1   # build 1 (2026-06-29): h502d0c9_1 on linux-64 (ISCA), h269e6ae_1 on linux-aarch64 (the rehearsal)
   - compilers
   - make
   - cmake

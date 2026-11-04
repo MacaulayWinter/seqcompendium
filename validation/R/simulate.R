@@ -10,9 +10,15 @@
 
 # The template, fitted once. counts: samples x features; reads: the template's
 # denominator (total reads per sample) or NULL.
-fit_template <- function(counts, reads = NULL, seed = 20261029L) {
+# Features present in fewer than min_prev of the template's samples are left
+# out before fitting: MIDASim's correlation step is features x features, and
+# the 16S templates have 18,000-33,000 ASVs (CLAUDE.md D38). 0.10 is R-PREV,
+# the engine's own prevalence rule: a rarer template feature seldom reaches it in
+# a simulated group, so little the engine would test is lost.
+fit_template <- function(counts, reads = NULL, seed = 20261029L, min_prev = 0.10) {
   counts <- round(as.matrix(counts))
-  counts <- counts[rowSums(counts) > 0, colSums(counts) > 0, drop = FALSE]
+  counts <- counts[rowSums(counts) > 0, colMeans(counts > 0) >= min_prev, drop = FALSE]
+  counts <- counts[rowSums(counts) > 0, , drop = FALSE]
   set.seed(seed)
   midas <- suppressMessages(MIDASim::MIDASim.setup(counts, mode = "parametric"))
   base <- colMeans(counts / rowSums(counts)); base <- pmax(base, 1e-8); base <- base / sum(base)
