@@ -1,5 +1,5 @@
-# conda environment for the v0.1.0 validation grid on ISCA (CLAUDE.md D34h).
-# ISCA has no container runtime (seq-triage D42). R and the system libraries
+# conda environment for the v0.1.0 validation grid, on any machine (CLAUDE.md D34h, D39).
+# Shared machines may lack a container runtime or preload other versions. R and the system libraries
 # come from conda-forge; every R package from renv.lock, built from source.
 # No pandoc: the grid scores CSVs only, so the HTML report is skipped.
 name: seqcompendium-validation
@@ -7,7 +7,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - r-base=4.6.1=*_1   # build 1 (2026-06-29): h502d0c9_1 on linux-64 (ISCA), h269e6ae_1 on linux-aarch64 (the rehearsal)
+  - r-base=4.6.1=*_1   # build 1 (2026-06-29): h502d0c9_1 on linux-64 (most clusters), h269e6ae_1 on linux-aarch64 (the rehearsal)
   - compilers
   - make
   - cmake

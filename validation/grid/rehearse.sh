@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# E7-M7 rehearsal on the Mac (CLAUDE.md D33): builds the ISCA environment in a
-# clean Linux container exactly as setup_env.sh does on ISCA, runs the main toy
+# E7-M7 rehearsal on the Mac (CLAUDE.md D33): builds the grid environment in a
+# clean Linux container exactly as setup_env.sh does on any machine, runs the main toy
 # bundle, and compares its leads table with the reference container's.
-#   bash validation/isca/rehearse.sh <work dir>
+#   bash validation/grid/rehearse.sh <work dir>
 set -euo pipefail
 W="$1"; mkdir -p "$W"
 docker run --rm -v "$PWD":/src:ro -v "$W":/work docker.io/condaforge/miniforge3:26.7.2-0 bash -c '
   set -euo pipefail; cp -r /src /work/repo; cd /work/repo; rm -rf .validation_env
   export SEQCOMP_ENV=/work/env SLURM_CPUS_PER_TASK=6
-  bash validation/isca/setup_env.sh
+  bash validation/grid/setup_env.sh
   source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate /work/env; export R_LIBS_USER=/work/env/Rlib
   Rscript -e "library(seqcompendium); make_toy_bundle(\"/work/toy\"); run_compendium(\"/work/toy\", \"/work/conda_out\")"'
 docker run --rm -v "$W":/work seqcompendium:e7 Rscript -e 'library(seqcompendium); make_toy_bundle("/work/toy_ref"); run_compendium("/work/toy_ref", "/work/ref_out")'

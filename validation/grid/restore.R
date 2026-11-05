@@ -1,5 +1,5 @@
 # Restores the locks from source (P3M's Linux binaries are built for Ubuntu,
-# not for ISCA's system), then checks every version against the locks.
+# not for an arbitrary system), then checks every version against the locks.
 locks <- commandArgs(trailingOnly = TRUE)
 s <- "2026-10-14"
 repos <- c(CRAN = sprintf("https://p3m.dev/cran/%s", s),
