@@ -2,7 +2,7 @@
 # ve7b_nearing.R: V-E7 (b), the engine against Nearing et al. 2022
 # (doi:10.1038/s41467-022-28034-z) on its first two public datasets in C-locale
 # order, ArcticFireSoils ("Soil - Fires") and ArcticFreshwaters ("Freshwater -
-# Arctic"); validation/PREREGISTRATION.md §5, CLAUDE.md D41.
+# Arctic"); validation/PREREGISTRATION.md §5, CLAUDE.md D41, D42.
 #
 #   Rscript validation/ve7b_nearing.R <Hackathon/Studies folder> <source_data_all.xlsx> <results dir>
 #
