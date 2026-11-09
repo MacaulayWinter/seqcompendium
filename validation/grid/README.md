@@ -69,6 +69,20 @@ outside the repository (results and data are never committed).
    Then bring back `$VAL/results/` (the `rows/` folder) and `marks.csv`. The Mac marks
    (V-E1, V-E2, V-E7, V-E8, V-E10) are run separately and merged in by `collect.R`.
 
+## V-E7b: the engine against Nearing et al. 2022
+
+Two tasks, one per data set (ArcticFireSoils, ArcticFreshwaters), using the same
+environment (step 1). Each takes tens of hours on 1 CPU; give each 32 GB of memory.
+
+```bash
+VAL=/path/to/work bash validation/grid/prepare_ve7b.sh
+VAL=/path/to/work sbatch --export=ALL --array=1-2 validation/grid/slurm_ve7b_example.sbatch
+```
+
+Without SLURM: `VAL=/path/to/work bash validation/grid/run_ve7b.sh 1` and `... run_ve7b.sh 2`.
+Results land in `$VAL/results_ve7b/`: `ve7b_<data set>.csv` per task, then
+`ve7b_nearing.csv` and `ve7b_marks.csv` once both are done. Bring back that folder.
+
 ## Checking the environment first (optional)
 
 `validation/grid/rehearse.sh` builds the environment inside a clean Miniforge container and
