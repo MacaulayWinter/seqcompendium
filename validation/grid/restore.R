@@ -20,7 +20,8 @@ for (lf in locks) {
   for (p in names(j$Packages)) want[[p]] <- j$Packages[[p]]$Version
 }
 got <- vapply(names(want), function(p) tryCatch(as.character(utils::packageVersion(p, lib.loc = lib)), error = function(e) "missing"), "")
-bad <- names(want)[got != unlist(want)]
+source(file.path(dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)))), "versions.R"))
+bad <- versions_differ(unlist(want), got)
 bad <- setdiff(bad, c("base", "compiler", "graphics", "grDevices", "grid", "methods", "parallel", "splines", "stats", "stats4", "tcltk", "tools", "utils"))
 if (length(bad)) stop("Versions differ from the locks: ", paste(sprintf("%s (want %s, got %s)", bad, unlist(want)[bad], got[bad]), collapse = "; "))
 # Every package must also load, each in a fresh R, so a library changed by a
