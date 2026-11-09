@@ -9,6 +9,9 @@ unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH OBJC_INCLUDE_PATH LIBRARY_PATH LD_
 unset R_HOME R_LIBS R_LIBS_SITE R_ENVIRON R_PROFILE R_MAKEVARS_SITE
 # The user's own ~/.Renviron, ~/.Rprofile and ~/.R/Makevars are not read.
 export R_ENVIRON_USER=/dev/null R_PROFILE_USER=/dev/null R_MAKEVARS_USER=/dev/null
+# ...except the environment's own Makevars, written by setup_env.sh when this
+# platform's R build leaves a C standard's compiler empty (D50).
+if [ -s "$ENV_DIR/etc/seqcomp-Makevars" ]; then export R_MAKEVARS_USER="$ENV_DIR/etc/seqcomp-Makevars"; fi
 # renv's package cache lives inside the environment, so a rebuild never reuses
 # a package built in another shell.
 export RENV_PATHS_ROOT="$ENV_DIR/renv"

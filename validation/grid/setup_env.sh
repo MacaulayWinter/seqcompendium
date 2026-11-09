@@ -15,6 +15,13 @@ if [ -d "$ENV_DIR/conda-meta" ]; then conda env update -p "$ENV_DIR" -f validati
 else conda env create -p "$ENV_DIR" -f validation/grid/environment.yml; fi
 # shellcheck disable=SC1091
 source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate "$ENV_DIR"
+# Some platform builds of conda's R leave CC17 or CC23 empty in Makeconf (seen on
+# linux-aarch64), so a package that asks for that C standard cannot compile. Fill
+# only the empty ones, in a Makevars file that belongs to the environment (D50).
+mc="$ENV_DIR/lib/R/etc/Makeconf"; mk="$ENV_DIR/etc/seqcomp-Makevars"; mkdir -p "$ENV_DIR/etc"; : > "$mk"
+cc=$(sed -n 's/^CC *= *//p' "$mc" | head -1)   # the compiler itself: R sets CC = $(CC17) for C17 packages
+grep -q '^CC17 *= *$' "$mc" && echo "CC17 = $cc -std=gnu17" >> "$mk"
+grep -q '^CC23 *= *$' "$mc" && echo "CC23 = $cc -std=gnu2x" >> "$mk"
 source validation/grid/isolate_env.sh   # only the environment's own libraries (D44)
 # Every pkg-config entry in the environment must resolve, or a package's configure
 # gets empty flags and fails later with a confusing error (D45).
