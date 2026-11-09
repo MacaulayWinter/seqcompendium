@@ -26,7 +26,7 @@ SETS <- list(ArcticFireSoils = list(label = "Soil - Fires", column = "Fire"),
              ArcticFreshwaters = list(label = "Freshwater - Arctic", column = "Location"))
 if (!is.null(only) && !only %in% names(SETS)) stop("unknown data set ", only, "; use one of ", paste(names(SETS), collapse = ", "))
 METHODS <- c(D04 = "ALDEx2", D17 = "Wilcoxon (CLR)", D19 = "LEfSe")
-paper <- as.data.frame(readxl::read_excel(xlsx, sheet = "Figure1B_counts (filt)")); names(paper)[1] <- "method"
+paper <- as.data.frame(readxl::read_excel(xlsx, sheet = "Figure1B_counts (filt)", .name_repair = "minimal"))   # first column: the method, unnamed; names(paper)[1] <- "method"
 
 # The tables are large (ArcticFreshwaters: 178,927 ASVs x 2,468 samples, 1.8 GB of
 # text), so they are read with data.table and filtered column by column before
@@ -46,7 +46,11 @@ for (d in if (is.null(only)) names(SETS) else only) {
   dir.create(file.path(b, "metadata"), recursive = TRUE); dir.create(file.path(b, "layers"))
   meta <- utils::read.delim(file.path(sdir, d, sprintf("%s_meta.tsv", d)), check.names = FALSE, comment.char = "")
   names(meta)[1] <- "sample"
-  m <- read_asvs(file.path(sdir, d, sprintf("%s_ASVs_table.tsv", d)), meta$sample[!is.na(meta[[s$column]]) & nzchar(meta[[s$column]])])
+  # The paper's sample set: the samples kept by its rarefaction (the columns of
+  # <data set>_ASVs_table_rare.tsv; Source Data "Figure1B_dataset_char (filt)" gives
+  # 147 and 936 samples), with the unrarefied counts (D48).
+  rare <- strsplit(readLines(file.path(sdir, d, sprintf("%s_ASVs_table_rare.tsv", d)), n = 2)[2], "\t")[[1]][-1]
+  m <- read_asvs(file.path(sdir, d, sprintf("%s_ASVs_table.tsv", d)), intersect(meta$sample[!is.na(meta[[s$column]]) & nzchar(meta[[s$column]])], rare))
   keep <- colnames(m)
   lv <- sort(unique(meta[[s$column]][match(keep, meta$sample)]))
   utils::write.table(data.frame(sample = keep, group = meta[[s$column]][match(keep, meta$sample)]), file.path(b, "metadata/study_metadata.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
