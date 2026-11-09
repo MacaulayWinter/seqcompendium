@@ -21,6 +21,7 @@ long_units <- function(layers, des, cells) {
   for (nm in names(layers)) for (p in des$grouping) {
     lv <- des$levels_of(p); if (!length(lv)) next
     ce <- merge(cells, st[, c("sample", p, des$subject), drop = FALSE], by = "sample")
+    ce <- ce[ce$sample %in% layers[[nm]]$data$sample, , drop = FALSE]   # only samples with data in this layer (D49)
     ce <- ce[!is.na(ce[[p]]) & ce$timepoint %in% des$time_order & !is.na(ce[[des$subject]]), ]
     for (blk in unique(ce$block)) {
       d <- ce[ce$block == blk, ]

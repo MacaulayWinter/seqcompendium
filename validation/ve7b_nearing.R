@@ -66,7 +66,10 @@ for (d in if (is.null(only)) names(SETS) else only) {
                    file.path(b, "manifest.yaml"))
   cat(d, ": ", ncol(m), " samples, ", nrow(m), " features after the filter; engine starting ", format(Sys.time()), "\n", sep = "")
   o <- file.path(w, "out"); t0 <- proc.time()[["elapsed"]]
-  err <- tryCatch({ suppressMessages(suppressWarnings(run_compendium(b, o))); NA_character_ }, error = function(e) conditionMessage(e))
+  # On an error the call stack is printed, so the log names the failing step.
+  err <- tryCatch(withCallingHandlers({ suppressMessages(suppressWarnings(run_compendium(b, o))); NA_character_ },
+                                      error = function(e) { cat("engine error:", conditionMessage(e), "\ncall stack:\n"); print(utils::head(rev(sys.calls()), 25)) }),
+                  error = function(e) conditionMessage(e))
   secs <- proc.time()[["elapsed"]] - t0
   ag <- if (is.na(err)) utils::read.csv(file.path(o, "04_agreement", "Q4.csv")) else NULL
   ds <- if (is.na(err) && file.exists(file.path(o, "04_agreement", "Q4_describe_only.csv"))) utils::read.csv(file.path(o, "04_agreement", "Q4_describe_only.csv")) else NULL
@@ -82,6 +85,7 @@ for (d in if (is.null(only)) names(SETS) else only) {
   res$differences <- "paper: R 4.0-era package versions, its own pre-processing scripts; engine: Bioconductor 3.23 versions, ALDEx2 and CLR as the engine runs them (pseudocount R-PSEUDO = 0.5), both groups' samples only"
   utils::write.csv(res, file.path(rdir, sprintf("ve7b_%s.csv", d)), row.names = FALSE)
   print(res[, c("dataset", "method", "samples", "features", "engine", "paper", "equal", "seconds", "error")], row.names = FALSE)
+  if (!is.na(err)) { cat("V-E7b: the engine run on", d, "stopped with an error; this task fails.\n"); quit(save = "no", status = 1) }
 }
 
 done <- file.path(rdir, sprintf("ve7b_%s.csv", names(SETS)))

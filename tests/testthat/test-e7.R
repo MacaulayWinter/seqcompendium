@@ -24,3 +24,15 @@ test_that("DivNet is skipped, with a note, above R-DIVNETMAX features; A01 still
   expect_true(all(is.na(a4$p)))
   expect_true(all(is.finite(as.numeric(got$a2$p[got$a2$method_id == "A01"]))))
 })
+
+test_that("a sample with no counts is left out of the layer with a note, and the run completes (D49)", {
+  b <- toy("copy_null"); o <- out_dir()
+  first <- rd(file.path(b, META))$sample[rd(file.path(b, META))$kind == "none"][1]
+  edit(b, LAYER, function(x) { x$value[x$sample == first] <- "0"; x })
+  run_compendium(b, o)
+  chk <- rd(file.path(o, "00_input_check", "bundle_check.csv"))
+  expect_true(any(grepl(sprintf("total of 0 in layer `toy_counts`.*%s", first), chk$message)))
+  ps <- rd(file.path(o, "03_results", "Q2_alpha", "per_sample.csv"))
+  expect_false(first %in% ps$sample)
+  expect_gt(nrow(ps), 0)
+})
