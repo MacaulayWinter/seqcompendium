@@ -12,6 +12,10 @@ own R and packages, and work is split into numbered tasks that any launcher can 
   `conda` must be on PATH in the shell you run or submit from (load or install it
   however your machine provides it); jobs inherit it with `--export=ALL`. Every grid
   script checks this first and stops with a message if it is missing.
+  After activating the grid's environment, every script also clears the shell's
+  compiler and library search paths (CPATH, LIBRARY_PATH, LD_LIBRARY_PATH, other
+  pkg-config folders, your own R start-up files), so nothing is built or run against
+  libraries from outside the environment (`isolate_env.sh`).
 - Internet on the machine that runs steps 1 and 2 (packages, then the template data).
   The tasks themselves need no internet.
 - Disk: about 6 GB for the environment, 3 GB for templates and results.

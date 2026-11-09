@@ -7,6 +7,7 @@ source validation/grid/need_conda.sh   # stops here, with a message, if conda is
 : "${VAL:?set VAL}"; ENV_DIR="${SEQCOMP_ENV:-$VAL/env}"
 # shellcheck disable=SC1091
 source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate "$ENV_DIR"
+source validation/grid/isolate_env.sh   # only the environment's own libraries (D44)
 export R_LIBS_USER="$ENV_DIR/Rlib" EXPERIMENT_HUB_CACHE="$VAL/hubcache"
 Rscript validation/fetch_templates.R "$VAL/templates"
 Rscript validation/grid/make_tasks.R "$VAL" "${RUNS_PER_TASK:-2}"

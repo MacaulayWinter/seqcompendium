@@ -27,3 +27,4 @@ dependencies:
   - libpng
   - libtiff
   - libjpeg-turbo
+  - icu

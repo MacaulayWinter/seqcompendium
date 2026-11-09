@@ -11,6 +11,7 @@ source validation/grid/need_conda.sh   # stops here, with a message, if conda is
 i="$1"; ENV_DIR="${SEQCOMP_ENV:-$VAL/env}"
 # shellcheck disable=SC1091
 source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate "$ENV_DIR"
+source validation/grid/isolate_env.sh   # only the environment's own libraries (D44)
 export R_LIBS_USER="$ENV_DIR/Rlib" OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 n=$(wc -l < "$VAL/tasks.tsv")
 if [ "$i" -le "$n" ]; then

@@ -11,9 +11,11 @@
 set -euo pipefail
 source validation/grid/need_conda.sh   # stops here, with a message, if conda is not on PATH
 ENV_DIR="${SEQCOMP_ENV:-${VAL:?set VAL}/env}"
-if [ ! -d "$ENV_DIR" ]; then conda env create -p "$ENV_DIR" -f validation/grid/environment.yml; fi
+if [ -d "$ENV_DIR/conda-meta" ]; then conda env update -p "$ENV_DIR" -f validation/grid/environment.yml
+else conda env create -p "$ENV_DIR" -f validation/grid/environment.yml; fi
 # shellcheck disable=SC1091
 source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate "$ENV_DIR"
+source validation/grid/isolate_env.sh   # only the environment's own libraries (D44)
 export R_LIBS_USER="$ENV_DIR/Rlib"; mkdir -p "$R_LIBS_USER"
 Rscript validation/grid/restore.R validation/renv-validation.lock
 R CMD INSTALL --no-test-load .
