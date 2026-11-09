@@ -26,7 +26,7 @@ SETS <- list(ArcticFireSoils = list(label = "Soil - Fires", column = "Fire"),
              ArcticFreshwaters = list(label = "Freshwater - Arctic", column = "Location"))
 if (!is.null(only) && !only %in% names(SETS)) stop("unknown data set ", only, "; use one of ", paste(names(SETS), collapse = ", "))
 METHODS <- c(D04 = "ALDEx2", D17 = "Wilcoxon (CLR)", D19 = "LEfSe")
-paper <- as.data.frame(readxl::read_excel(xlsx, sheet = "Figure1B_counts (filt)", .name_repair = "minimal"))   # first column: the method, unnamed; names(paper)[1] <- "method"
+paper <- as.data.frame(readxl::read_excel(xlsx, sheet = "Figure1B_counts (filt)", .name_repair = "minimal")); names(paper)[1] <- "method"   # first column: the method, unnamed
 
 # The tables are large (ArcticFreshwaters: 178,927 ASVs x 2,468 samples, 1.8 GB of
 # text), so they are read with data.table and filtered column by column before
