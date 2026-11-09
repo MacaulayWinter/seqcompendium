@@ -3,6 +3,7 @@
 # then writes the task list (CLAUDE.md D36, D39). Needs internet; run once.
 #   VAL=<work folder> RUNS_PER_TASK=2 bash validation/grid/prepare.sh
 set -euo pipefail
+source validation/grid/need_conda.sh   # stops here, with a message, if conda is not on PATH
 : "${VAL:?set VAL}"; ENV_DIR="${SEQCOMP_ENV:-$VAL/env}"
 # shellcheck disable=SC1091
 source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate "$ENV_DIR"

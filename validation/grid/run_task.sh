@@ -6,6 +6,7 @@
 # Tasks 1..N are the lines of $VAL/tasks.tsv (grid runs), then the lines of
 # $VAL/tasks_ve6.tsv. Uses the environment built by setup_env.sh.
 set -euo pipefail
+source validation/grid/need_conda.sh   # stops here, with a message, if conda is not on PATH
 : "${VAL:?set VAL to the validation work folder (templates/, tasks.tsv, results/)}"
 i="$1"; ENV_DIR="${SEQCOMP_ENV:-$VAL/env}"
 # shellcheck disable=SC1091

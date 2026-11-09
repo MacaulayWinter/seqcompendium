@@ -12,4 +12,5 @@
 #SBATCH --time=24:00:00
 #SBATCH --output=seqcomp-grid_%A_%a.log
 set -euo pipefail
+source validation/grid/need_conda.sh   # stops here, with a message, if conda is not on PATH
 bash validation/grid/run_task.sh "$SLURM_ARRAY_TASK_ID"

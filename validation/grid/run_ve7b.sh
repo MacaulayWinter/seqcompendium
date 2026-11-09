@@ -4,6 +4,7 @@
 # built by setup_env.sh and the data fetched by prepare_ve7b.sh.
 #   VAL=<work folder> bash validation/grid/run_ve7b.sh <1|2>
 set -euo pipefail
+source validation/grid/need_conda.sh   # stops here, with a message, if conda is not on PATH
 : "${VAL:?set VAL}"; ENV_DIR="${SEQCOMP_ENV:-$VAL/env}"
 case "$1" in 1) D=ArcticFireSoils ;; 2) D=ArcticFreshwaters ;; *) echo "task must be 1 or 2" >&2; exit 2 ;; esac
 # shellcheck disable=SC1091

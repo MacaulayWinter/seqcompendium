@@ -13,4 +13,5 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --output=seqcomp-ve7b_%A_%a.log
 set -euo pipefail
+source validation/grid/need_conda.sh   # stops here, with a message, if conda is not on PATH
 bash validation/grid/run_ve7b.sh "$SLURM_ARRAY_TASK_ID"

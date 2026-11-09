@@ -9,6 +9,9 @@ own R and packages, and work is split into numbered tasks that any launcher can 
 ## What you need
 
 - Linux or macOS with `conda` (Miniforge is enough) and `bash`.
+  `conda` must be on PATH in the shell you run or submit from (load or install it
+  however your machine provides it); jobs inherit it with `--export=ALL`. Every grid
+  script checks this first and stops with a message if it is missing.
 - Internet on the machine that runs steps 1 and 2 (packages, then the template data).
   The tasks themselves need no internet.
 - Disk: about 6 GB for the environment, 3 GB for templates and results.

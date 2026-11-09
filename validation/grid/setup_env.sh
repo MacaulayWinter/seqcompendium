@@ -9,6 +9,7 @@
 # from source at the 2026-10-14 snapshot, and
 # fails unless every installed version equals the locks.
 set -euo pipefail
+source validation/grid/need_conda.sh   # stops here, with a message, if conda is not on PATH
 ENV_DIR="${SEQCOMP_ENV:-${VAL:?set VAL}/env}"
 if [ ! -d "$ENV_DIR" ]; then conda env create -p "$ENV_DIR" -f validation/grid/environment.yml; fi
 # shellcheck disable=SC1091
