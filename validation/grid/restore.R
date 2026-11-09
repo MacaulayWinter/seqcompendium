@@ -23,4 +23,9 @@ got <- vapply(names(want), function(p) tryCatch(as.character(utils::packageVersi
 bad <- names(want)[got != unlist(want)]
 bad <- setdiff(bad, c("base", "compiler", "graphics", "grDevices", "grid", "methods", "parallel", "splines", "stats", "stats4", "tcltk", "tools", "utils"))
 if (length(bad)) stop("Versions differ from the locks: ", paste(sprintf("%s (want %s, got %s)", bad, unlist(want)[bad], got[bad]), collapse = "; "))
+# Every package must also load, each in a fresh R, so a library changed by a
+# later `conda env update` is caught here and not in the middle of a run (D45).
+rs <- file.path(R.home("bin"), "Rscript"); pk <- setdiff(names(want), c("base", "compiler", "graphics", "grDevices", "grid", "methods", "parallel", "splines", "stats", "stats4", "tcltk", "tools", "utils"))
+fails <- pk[vapply(pk, function(p) system2(rs, c("-e", shQuote(sprintf("suppressMessages(loadNamespace('%s'))", p))), stdout = FALSE, stderr = FALSE) != 0, TRUE)]
+if (length(fails)) stop("These packages are installed but do not load: ", paste(fails, collapse = ", "), ". Remove each from ", lib, " and run setup_env.sh again.")
 cat(length(want), "packages, every version equal to the locks; R", as.character(getRversion()), "\n")

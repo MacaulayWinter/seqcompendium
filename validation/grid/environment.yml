@@ -28,3 +28,10 @@ dependencies:
   - libtiff
   - libjpeg-turbo
   - icu
+  # Development files that conda-forge now ships as separate packages (D45): the unversioned
+  # liblzma.so and libxml2.so links, expat.pc (fontconfig.pc requires it, or pkg-config returns
+  # nothing for fontconfig), and the X11 protocol .pc files the xcb/xrender .pc files require.
+  - liblzma-devel
+  - libxml2-devel
+  - expat
+  - xorg-xorgproto
