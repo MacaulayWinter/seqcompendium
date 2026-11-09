@@ -19,3 +19,7 @@ export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"      # no other .pc files are search
 # stringi uses the ICU it ships with, never one found on the machine.
 export STRINGI_DISABLE_PKG_CONFIG=1
 export R_LIBS_USER="$ENV_DIR/Rlib"
+# Optional: a folder holding a newer build of seqcompendium itself (install_engine.sh),
+# searched before the environment's library, so the engine can be updated for new
+# tasks without touching the library that running tasks have loaded (D49).
+if [ -n "${SEQCOMP_ENGINE_LIB:-}" ]; then export R_LIBS="$SEQCOMP_ENGINE_LIB"; fi
