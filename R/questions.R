@@ -72,8 +72,9 @@ q3_composition <- function(units, layers, des = NULL) {
                       cbind(key, method_id = "B09", role = "describe_only", stat = an$statistic, p = an$signif, note = "ANOSIM R; sensitive to spread"),
                       cbind(key, method_id = "B17", role = "describe_only", stat = NA, p = NA,
                             note = sprintf("SIMPER top contributors: %s (picks variable features, not differing ones)", paste(utils::head(rownames(sp), 3), collapse = ", "))))
-    pc <- stats::cmdscale(d, k = 2)
-    ord[[i]] <- cbind(key, sample = rownames(m), group = as.character(g), axis1 = pc[, 1], axis2 = pc[, 2], row.names = NULL)
+    pc <- stats::cmdscale(d, k = 2, eig = TRUE); ev <- pc$eig; pos <- sum(ev[ev > 0])   # robust Aitchison need not be Euclidean
+    ord[[i]] <- cbind(key, sample = rownames(m), group = as.character(g), axis1 = pc$points[, 1], axis2 = pc$points[, 2],
+                      axis1_share = ev[1] / pos, axis2_share = ev[2] / pos, negative_eigen_share = sum(abs(ev[ev < 0])) / pos, row.names = NULL)
   }
   out <- bind_rows(res)
   if (!is.null(out)) {
