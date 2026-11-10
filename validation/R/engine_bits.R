@@ -11,7 +11,7 @@ default_q4_calls <- function(bundle, truth) {
     L <- lc$layers[[u$layer]]
     id <- if (is.null(L$spec$denominators)) "D09" else "D01"
     ud <- e$unit_data(u, L, des)
-    res <- e$FITS[[id]](ud, e$prevalent(ud$m, ud$g))
+    pf <- e$prevalent(ud$m, ud$g); res <- e$FITS[[id]](ud, e$fit_features(id, ud$m, ud$g, pf))   # as the engine fits it (D51)
     ok <- is.finite(res$p); q <- rep(NA_real_, nrow(res)); q[ok] <- stats::p.adjust(res$p[ok], "BH")
     call <- res$feature[ok & q <= e$rule("R-FDR")]
     list(error = NA_character_, default_id = id, calls = length(call), false_calls = length(setdiff(call, truth$planted)))

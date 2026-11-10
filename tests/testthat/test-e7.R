@@ -36,3 +36,45 @@ test_that("a sample with no counts is left out of the layer with a note, and the
   expect_false(first %in% ps$sample)
   expect_gt(nrow(ps), 0)
 })
+
+test_that("not_estimable() names a feature with no counts in a cell, and only that one (D51)", {
+  m <- cbind(a = c(0, 0, 3, 4), b = c(1, 0, 2, 5), c = c(2, 1, 0, 0))
+  x <- seqcompendium:::not_estimable(m, factor(c("ctl", "ctl", "trt", "trt")))
+  expect_equal(names(x), c("a", "c"))
+  expect_match(x[["a"]], "no counts in ctl")
+  expect_match(x[["c"]], "no counts in trt")
+})
+
+test_that("a longitudinal feature with no counts in a group at a timepoint is not fitted; its rows say why (D51)", {
+  o <- out_dir(); run_compendium(toy(), o)          # the main toy: toyG28 and toyG29 have no counts in treated at T1
+  q4 <- rd(file.path(o, "03_results", "Q4_differential", "results.csv"))
+  r <- q4[q4$feature %in% c("toyG28", "toyG29"), ]
+  expect_gt(nrow(r), 0)
+  expect_true(all(r$method_role == "not estimable"))
+  expect_true(all(r$effect %in% c("", "NA") & r$p %in% c("", "NA")))
+  expect_true(all(grepl("no counts in treated at T1", r$caveat)))
+  expect_true(any(q4$method_role == "default"))       # the other features are still fitted
+})
+
+test_that("a snapshot feature with no counts in one group is not fitted by DESeq2 (D51)", {
+  b <- toy("calib"); md <- rd(file.path(b, META)); lv <- sort(unique(md$group[md$kind == "none"]))
+  lvl <- md$sample[md$kind == "none" & md$group == lv[2]]
+  edit(b, LAYER, function(x) { x$value[x$feature == "toyG01" & x$sample %in% lvl] <- "0"; x })
+  o <- out_dir(); run_compendium(b, o)
+  q4 <- rd(file.path(o, "03_results", "Q4_differential", "results.csv"))
+  r <- q4[q4$feature == "toyG01", ]
+  expect_equal(unique(r$method_role), "not estimable")
+  expect_match(r$caveat[1], sprintf("no counts in %s", lv[2]))
+})
+
+test_that("in the zero-inflated fixture, a feature emptied in one group x timepoint cell is reported not estimable (D51; the old E3-M9 data's case)", {
+  b <- toy("zeroinfl_many"); md <- rd(file.path(b, META))
+  cell <- md$sample[md$kind == "none" & md$group == "treated" & md$day == "T1"]
+  edit(b, LAYER, function(x) { x$value[x$feature == "toyG09" & x$sample %in% cell] <- "0"; x })
+  o <- out_dir(); run_compendium(b, o)
+  q4 <- rd(file.path(o, "03_results", "Q4_differential", "results.csv"))
+  r <- q4[q4$feature == "toyG09" & q4$timepoint == "T1", ]   # this fixture is compared at each timepoint separately
+  expect_equal(nrow(r), 1L)
+  expect_true(r$method_role == "not estimable" && grepl("no counts in treated", r$caveat))
+  expect_false(any(q4$method_role[q4$feature == "toyG09" & q4$timepoint == "T0"] == "not estimable"))
+})

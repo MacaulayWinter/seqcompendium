@@ -134,6 +134,15 @@ q4_unit <- function(u, layer, default_id, des = NULL) {
     return(list(skip = "a denominator is missing or zero for a sample in this comparison"))
   feats <- prevalent(ud$m, ud$g)
   if (length(feats) < 2) return(list(skip = "fewer than 2 features pass the prevalence rule (R-PREV)"))
+  # A count model has no finite estimate for a feature with no counts in one
+  # group: the fit stops wherever the optimiser does, and that number differs
+  # between machines. Such a feature is not fitted; its row says why (D51).
+  all_feats <- feats; sep <- character(0)
+  if (default_id == "D01") {
+    sep <- not_estimable(ud$m[, feats, drop = FALSE], ud$g)
+    feats <- setdiff(feats, names(sep))
+    if (length(feats) < 2) return(list(skip = "fewer than 2 features have counts in both groups (a count model cannot estimate the rest)"))
+  }
   base <- tryCatch(FITS[[default_id]](ud, feats), error = function(e) NULL)
   if (is.null(base)) return(list(skip = sprintf("the default method (%s) failed to fit", default_id)))
   count_model <- default_id == "D01"
@@ -193,7 +202,9 @@ q4_unit <- function(u, layer, default_id, des = NULL) {
                         method_role = if (rung == 0) "default" else sprintf("fallback rung %d", rung), caveat = paste(cav, collapse = "; "))
     }
   }
-  res <- do.call(rbind, res)
+  for (f in names(sep)) res[[f]] <- data.frame(feature = f, effect = NA_real_, se = NA_real_, stat = NA_real_, p = NA_real_, effect_unit = "none (not estimable)", rung = 0L,
+                                                method_role = "not estimable", caveat = sep[[f]])
+  res <- do.call(rbind, res[intersect(all_feats, names(res))])
   ok <- is.finite(res$p)
   res$ci_low <- res$effect - 1.96 * res$se; res$ci_high <- res$effect + 1.96 * res$se
   res$q <- NA_real_; res$q[ok] <- stats::p.adjust(res$p[ok], "BH")
@@ -203,7 +214,25 @@ q4_unit <- function(u, layer, default_id, des = NULL) {
   # D24: what the result was adjusted for; methods that cannot adjust say so.
   res$adjusted_for <- ifelse(res$method_id %in% c("D17", "K01", "K04"), "not adjusted (this method cannot adjust for covariates)", ud$adjusted_for)
   res$share_expected_by_chance <- chance; res$excess_failures_p <- excess_p
-  list(results = res, checks = chk, share_failed = share, whole = whole, feats = feats, ud = ud)
+  list(results = res, checks = chk, share_failed = share, whole = whole, feats = all_feats, ud = ud)
+}
+
+# The features a method is fitted to: for the count model (D01), without those it
+# cannot estimate (D51), so simulations measure what the engine does.
+fit_features <- function(id, m, g, feats) if (identical(id, "D01")) setdiff(feats, names(not_estimable(m[, feats, drop = FALSE], g))) else feats
+
+# Features a count model cannot estimate: those with no counts at all in some
+# group (or group x timepoint cell). Returns a named character vector of
+# reasons, one per such feature (D51).
+not_estimable <- function(m, cell) {
+  cell <- droplevels(as.factor(cell))
+  out <- character(0)
+  for (f in colnames(m)) {
+    tot <- tapply(m[, f], cell, sum)
+    empty <- names(tot)[!is.na(tot) & tot == 0]
+    if (length(empty)) out[[f]] <- sprintf("not estimable: no counts in %s, so a count model has no finite fold change; see the presence question (Q5)", paste(empty, collapse = ", "))
+  }
+  out
 }
 
 # Agreement and describe-only methods for one unit. Each method's own BH

@@ -189,7 +189,18 @@ q4_long <- function(lus, layers, des, choices) {
     base <- data.frame(time = lu$time, g = lu$g, subject = lu$subject, off = log(den))
     if (!is.null(adj$cov)) base <- cbind(base, adj$cov)
     ct <- cov_terms(adj$cov)
+    all_feats <- feats
     if (denom) {
+      # No mixed model for a feature with no counts in some group x timepoint cell:
+      # its estimates (all of them, not only that cell's) would be wherever the
+      # optimiser stopped (D51). Its rows say why, with no number.
+      sep <- not_estimable(m[, feats, drop = FALSE], interaction(lu$g, lu$time, sep = " at "))
+      feats <- setdiff(feats, names(sep))
+      for (f in names(sep)) {
+        res[[length(res) + 1]] <- long_feature_rows(lu, f, m, NULL, 0L, sep[[f]], "L02", NA_character_, adj, NA, NA_real_, NA_real_, NA_real_, NA, not_estimable = TRUE)
+        chg[[length(chg) + 1]] <- long_change_rows(lu, f, m, NULL, 0L, sep[[f]], "L02", adj, not_estimable = TRUE)
+      }
+      if (length(feats)) {
       formA <- stats::as.formula(paste("y ~", ct, "time + time:g + offset(off) + (1 | subject)"))
       formB <- stats::as.formula(paste("y ~", ct, "g + g:time + offset(off) + (1 | subject)"))
       fits <- lapply(feats, function(f) { d <- base; d$y <- m[, f]; list(A = fit_glmm_nb(d, formA), B = fit_glmm_nb(d, formB), d = d) })
@@ -222,6 +233,7 @@ q4_long <- function(lus, layers, des, choices) {
         res[[length(res) + 1]] <- long_feature_rows(lu, f, m, cA, rung, cav, "L02", "log2 fold change (negative binomial mixed model), per unit of the denominator", adj, failed[k], sum(failed) / length(feats), cr$rate, excess_p, whole)
         chg[[length(chg) + 1]] <- long_change_rows(lu, f, m, cB, rung, cav, "L02", adj)
       }
+      }
     } else {
       fl <- function(form) {
         utils::capture.output(o <- suppressMessages(suppressWarnings(MicrobiomeStat::linda(feature.dat = t(m[, feats, drop = FALSE]),
@@ -247,11 +259,11 @@ q4_long <- function(lus, layers, des, choices) {
         chg[[length(chg) + 1]] <- long_change_rows(lu, f, m, cB, if (moved) 1L else 0L, cav, "D09re", adj, linda = TRUE)
       }
     }
-    agr[[length(agr) + 1]] <- long_agreement(lu, m, feats, adj, des)
+    agr[[length(agr) + 1]] <- long_agreement(lu, m, all_feats, adj, des)
     for (t in levels(lu$time)) {
       i <- lu$time == t
       if (length(unique(lu$g[i])) < 2) next
-      lf <- describe_lefse(list(m = m[i, , drop = FALSE], g = droplevels(lu$g[i]), samples = lu$samples[i]), feats)
+      lf <- describe_lefse(list(m = m[i, , drop = FALSE], g = droplevels(lu$g[i]), samples = lu$samples[i]), all_feats)
       desc[[length(desc) + 1]] <- cbind(data.frame(layer = lu$layer, predictor = lu$predictor, contrast = sprintf("%s vs %s", levels(lu$g)[2], levels(lu$g)[1]), timepoint = t, block = lu$block),
                                         method_id = "D19", lf, role = "describe_only")
     }
@@ -270,13 +282,15 @@ lin_coefs <- function(o, f) {
 
 # Per-timepoint group contrasts for one feature, from the model (rung 0/1) or
 # from per-timepoint tests on CLR (rung 2 for the NB model; rung 1 for LinDA).
-long_feature_rows <- function(lu, f, m, co, rung, cav, mid, unit, adj, failed, share, chance, excess_p, whole, linda = FALSE) {
+long_feature_rows <- function(lu, f, m, co, rung, cav, mid, unit, adj, failed, share, chance, excess_p, whole, linda = FALSE, not_estimable = FALSE) {
   z <- clr(m)[, f]; out <- list()
   for (t in levels(lu$time)) for (l in levels(lu$g)[-1]) {
     k <- sprintf("time%s:g%s", t, l); a <- lu$time == t & lu$g == levels(lu$g)[1]; b <- lu$time == t & lu$g == l
     if (!any(b) || !any(a)) next
     use_model <- !is.null(co) && k %in% rownames(co)
-    if (use_model) {
+    if (not_estimable) {
+      e <- NA_real_; se <- NA_real_; p <- NA_real_; id <- mid; role <- "not estimable"
+    } else if (use_model) {
       e <- co[k, 1]; se <- co[k, 2]; p <- co[k, ncol(co)]
       if (!linda) { e <- e / log(2); se <- se / log(2) }
       role <- if (rung == 0) "default" else "fallback rung 1"; id <- if (rung == 0) mid else if (linda) "K01" else "R02mm"
@@ -291,23 +305,25 @@ long_feature_rows <- function(lu, f, m, co, rung, cav, mid, unit, adj, failed, s
     }
     out[[length(out) + 1]] <- data.frame(layer = lu$layer, predictor = lu$predictor, contrast = sprintf("%s vs %s", l, levels(lu$g)[1]), timepoint = t, block = lu$block,
                                          feature = f, effect = e, se = se, stat = NA_real_, p = p,
-                                         effect_unit = if (use_model) unit else "difference in mean CLR", rung = if (use_model) rung else max(rung, 1L),
+                                         effect_unit = if (not_estimable) "none (not estimable)" else if (use_model) unit else "difference in mean CLR", rung = if (use_model || not_estimable) rung else max(rung, 1L),
                                          method_role = role, caveat = paste(cav, collapse = "; "), ci_low = e - 1.96 * se, ci_high = e + 1.96 * se,
                                          method_id = id, n_reference = sum(a), n_level = sum(b), share_expected_by_chance = chance, excess_failures_p = excess_p,
-                                         adjusted_for = if (use_model) adj$adjusted_for else "not adjusted (per-timepoint test on CLR)",
+                                         adjusted_for = if (use_model || not_estimable) adj$adjusted_for else "not adjusted (per-timepoint test on CLR)",
                                          share_failed_checks = share, whole_question_moved = whole)
   }
   bind_rows(out)
 }
 
 # Change from the first timepoint within each group, for one feature.
-long_change_rows <- function(lu, f, m, co, rung, cav, mid, adj, linda = FALSE) {
+long_change_rows <- function(lu, f, m, co, rung, cav, mid, adj, linda = FALSE, not_estimable = FALSE) {
   z <- clr(m)[, f]; out <- list()
   for (l in levels(lu$g)) for (t in levels(lu$time)[-1]) {
     k <- sprintf("g%s:time%s", l, t)
     pr <- paired_values(z, lu, rep(TRUE, length(z)), l, t)
     use_model <- !is.null(co) && k %in% rownames(co)
-    if (use_model) {
+    if (not_estimable) {
+      e <- NA_real_; se <- NA_real_; p <- NA_real_; id <- mid; role <- "not estimable"
+    } else if (use_model) {
       e <- co[k, 1]; se <- co[k, 2]; p <- co[k, ncol(co)]; if (!linda) { e <- e / log(2); se <- se / log(2) }
       id <- if (rung == 0) mid else "R02mm"; role <- if (rung == 0) "default" else "fallback rung 1"
     } else if (nrow(pr) >= 2) {
@@ -318,9 +334,9 @@ long_change_rows <- function(lu, f, m, co, rung, cav, mid, adj, linda = FALSE) {
     } else next
     out[[length(out) + 1]] <- data.frame(layer = lu$layer, predictor = lu$predictor, group = l, change = sprintf("%s vs %s", t, levels(lu$time)[1]), block = lu$block,
                                          feature = f, effect = e, ci_low = e - 1.96 * se, ci_high = e + 1.96 * se, p = p, n_subjects = nrow(pr),
-                                         effect_unit = if (use_model) (if (linda) "log2 fold change (LinDA)" else "log2 fold change (NB mixed model)") else "mean paired change in CLR",
+                                         effect_unit = if (not_estimable) "none (not estimable)" else if (use_model) (if (linda) "log2 fold change (LinDA)" else "log2 fold change (NB mixed model)") else "mean paired change in CLR",
                                          method_id = id, method_role = role, caveat = paste(cav, collapse = "; "),
-                                         adjusted_for = if (use_model) adj$adjusted_for else "not adjusted (paired test)")
+                                         adjusted_for = if (use_model || not_estimable) adj$adjusted_for else "not adjusted (paired test)")
   }
   bind_rows(out)
 }

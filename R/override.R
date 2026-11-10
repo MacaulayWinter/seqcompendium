@@ -51,7 +51,7 @@ calibrate_unit <- function(u, layer, ids, unit_index) {
     feats <- prevalent(sim$ud$m, sim$ud$g)
     for (id in ids) {
       if (id == "D01" && is.null(sim$ud$den)) next
-      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](sim$ud, feats))), error = function(e) NULL)
+      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](sim$ud, fit_features(id, sim$ud$m, sim$ud$g, feats)))), error = function(e) NULL)
       if (is.null(res)) { rows[[length(rows) + 1]] <- data.frame(method_id = id, rep = r, seed = seed, planted = planted, calls = NA, false_calls = NA, true_calls = NA, n_planted = length(sim$truth), fit = "failed"); next }
       ok <- is.finite(res$p); qq <- rep(NA_real_, nrow(res)); qq[ok] <- stats::p.adjust(res$p[ok], "BH")
       call <- res$feature[!is.na(qq) & qq <= rule("R-FDR")]
@@ -80,7 +80,7 @@ mde_unit <- function(sim, id, unit_index) {
     vals <- vapply(seq_len(max(1, simrep() %/% 2)), function(r) {
       x <- simulate_unit(sim$fit, sim$base, sim$libs, sim$ratio, sim$n1, sim$n2, TRUE, seed = seed_for(9000) + 1000L * unit_index + 100L * j + r, fc = MDE_FC[j])
       feats <- prevalent(x$ud$m, x$ud$g); tr <- intersect(x$truth, feats); if (!length(tr)) return(NA_real_)
-      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](x$ud, feats))), error = function(e) NULL); if (is.null(res)) return(NA_real_)
+      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](x$ud, fit_features(id, x$ud$m, x$ud$g, feats)))), error = function(e) NULL); if (is.null(res)) return(NA_real_)
       ok <- is.finite(res$p); qq <- rep(NA_real_, nrow(res)); qq[ok] <- stats::p.adjust(res$p[ok], "BH")
       mean(tr %in% res$feature[!is.na(qq) & qq <= rule("R-FDR")])
     }, 1)
