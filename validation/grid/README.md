@@ -19,8 +19,9 @@ own R and packages, and work is split into numbered tasks that any launcher can 
 - Internet on the machine that runs steps 1 and 2 (packages, then the template data).
   The tasks themselves need no internet.
 - Disk: about 6 GB for the environment, 3 GB for templates and results.
-- Per task: **1 CPU** and **6 GB memory** (shotgun templates; the 16S figure is being
-  checked and will be written here). One run takes 35–50 minutes on shotgun templates;
+- Per task: **1 CPU** and **6 GB memory** for shotgun templates; give tasks on larger inputs
+  **12 GB** (V-E7b's ArcticFireSoils task peaked at 8.9 GB; CLAUDE.md D52). The 16S figure is
+  being checked on the cluster and will be written here. One run takes 35–50 minutes on shotgun templates;
   a task is 2 runs by default.
 
 ## Steps
@@ -79,7 +80,7 @@ outside the repository (results and data are never committed).
 ## V-E7b: the engine against Nearing et al. 2022
 
 Two tasks, one per data set (ArcticFireSoils, ArcticFreshwaters), using the same
-environment (step 1). Each takes tens of hours on 1 CPU; give each 32 GB of memory.
+environment (step 1). Each takes tens of hours on 1 CPU (ArcticFireSoils: 1 d 17 h, peak 8.9 GB); give each 32 GB of memory.
 
 ```bash
 VAL=/path/to/work bash validation/grid/prepare_ve7b.sh
