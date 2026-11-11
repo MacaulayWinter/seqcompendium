@@ -15,7 +15,7 @@ docker run --rm --memory=6g -e POLLUTE="${POLLUTE:-0}" -v "$PWD":/src:ro -v "$W"
     export CPATH=/work/pollute/include LIBRARY_PATH=/work/pollute/lib LD_LIBRARY_PATH=/work/pollute/lib PKG_CONFIG_PATH=/work/pollute/lib/pkgconfig
     echo "polluted shell: CPATH=$CPATH LIBRARY_PATH=$LIBRARY_PATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH; ICU there: $(ls /work/pollute/lib/libicuuc.so.* | head -1)"
   fi
-  export SEQCOMP_ENV=/work/env SLURM_CPUS_PER_TASK=6
+  export SEQCOMP_ENV=/work/env SLURM_CPUS_PER_TASK=2   # 2 builds at once: 6 at once ran the 6 GB container out of memory compiling glmmTMB
   bash validation/grid/setup_env.sh
   source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate /work/env; ENV_DIR=/work/env; source validation/grid/isolate_env.sh
   Rscript -e "library(seqcompendium); make_toy_bundle(\"/work/toy\"); run_compendium(\"/work/toy\", \"/work/conda_out\")"'
