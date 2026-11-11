@@ -83,7 +83,10 @@ for (d in if (is.null(only)) names(SETS) else only) {
   unlink(w, recursive = TRUE)
   res <- do.call(rbind, rows)
   res$differences <- "paper: R 4.0-era package versions, its own pre-processing scripts; engine: Bioconductor 3.23 versions, ALDEx2 and CLR as the engine runs them (pseudocount R-PSEUDO = 0.5), both groups' samples only"
-  utils::write.csv(res, file.path(rdir, sprintf("ve7b_%s.csv", d)), row.names = FALSE)
+  # A failed run is kept apart (ve7b_<data set>.failed.csv), so the mark is never
+  # built from it; a later successful run replaces both files.
+  ok_file <- file.path(rdir, sprintf("ve7b_%s.csv", d)); bad_file <- file.path(rdir, sprintf("ve7b_%s.failed.csv", d))
+  if (is.na(err)) { utils::write.csv(res, ok_file, row.names = FALSE); unlink(bad_file) } else { utils::write.csv(res, bad_file, row.names = FALSE); unlink(ok_file) }
   print(res[, c("dataset", "method", "samples", "features", "engine", "paper", "equal", "seconds", "error")], row.names = FALSE)
   if (!is.na(err)) { cat("V-E7b: the engine run on", d, "stopped with an error; this task fails.\n"); quit(save = "no", status = 1) }
 }
