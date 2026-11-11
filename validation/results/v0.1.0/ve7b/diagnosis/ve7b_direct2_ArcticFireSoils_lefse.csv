@@ -1,0 +1,8 @@
+"dataset","what","count","note"
+"ArcticFireSoils","agreement set for this layer",NA,"D06 D04 D17"
+"ArcticFireSoils","covariates in the unit (NULL = none)",NA,"none"
+"ArcticFireSoils","features constant (zero variance) within at least one group",534,"of 3656"
+"ArcticFireSoils","LEfSe as the engine calls it",NA,"error: variables    1    2    3    5    6    7    8   10   11   12   13   14   15   17   19   20   22   24   28   30   31   32   33   34   35   36   40   41   42   43   44   45   49   51   57   60   61   64   65   67   70   72   73   74   75   76   79   80   82   83   84   85   87   89   92   95   98   99  100  101  103  104  105  106  107  108  109  110  111  112  115  116  119  121  125  126  13"
+"ArcticFireSoils","LEfSe, relative abundance scaled to 1e6 (as Python LEfSe does)",436,""
+"ArcticFireSoils","LEfSe, features constant within a group dropped before LEfSe",NA,"error: variables    1    2    3    4    5    6    7    8    9   10   12   13   15   20   22   25   26   27   28   30   37   40   41   45   48   50   51   52   53   54   57   58   60   61   62   63   65   69   72   73   74   75   76   77   78   79   80   83   86   89   90   98  101  102  104  105  107  108  110  111  112  113  114  115  116  120  121  123  126  131  133  134  135  136  137  138  13"
+"ArcticFireSoils","LEfSe, dropped + scaled to 1e6",369,""
