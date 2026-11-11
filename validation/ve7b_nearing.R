@@ -74,12 +74,17 @@ for (d in if (is.null(only)) names(SETS) else only) {
   ag <- if (is.na(err)) utils::read.csv(file.path(o, "04_agreement", "Q4.csv")) else NULL
   ds <- if (is.na(err) && file.exists(file.path(o, "04_agreement", "Q4_describe_only.csv"))) utils::read.csv(file.path(o, "04_agreement", "Q4_describe_only.csv")) else NULL
   for (id in names(METHODS)) {
-    n_engine <- if (!is.na(err)) NA else if (id == "D19") { if (is.null(ds)) NA else length(unique(ds$feature[ds$method_id == "D19"])) }
+    # LEfSe always writes one row; with feature NA it says LEfSe flagged nothing or did not run (its note), so NA is not counted.
+    n_engine <- if (!is.na(err)) NA else if (id == "D19") { if (is.null(ds)) NA else length(unique(stats::na.omit(ds$feature[ds$method_id == "D19"]))) }
                 else { x <- ag[ag$method_id == id & is.finite(ag$p), ]; sum(stats::p.adjust(x$p, "BH") < 0.05) }
     n_paper <- paper[[s$label]][paper$method == METHODS[[id]]]
     rows[[length(rows) + 1]] <- data.frame(dataset = d, paper_label = s$label, method = METHODS[[id]], samples = ncol(m), features = nrow(m),
                                            engine = n_engine, paper = n_paper, equal = isTRUE(n_engine == n_paper), seconds = round(secs), error = err)
   }
+  # The engine's own tables and notes are kept (a few MB), so a difference can be traced without rerunning.
+  keep_dir <- file.path(rdir, sprintf("ve7b_%s_engine", d)); unlink(keep_dir, recursive = TRUE); dir.create(keep_dir)
+  for (f in c("04_agreement/Q4.csv", "04_agreement/Q4_describe_only.csv", "03_results/Q4_differential/results.csv", "00_input_check/bundle_check.csv", "report/compendium_report.md", "provenance/engine.yaml"))
+    if (file.exists(file.path(o, f))) file.copy(file.path(o, f), file.path(keep_dir, gsub("/", "__", f)))
   unlink(w, recursive = TRUE)
   res <- do.call(rbind, rows)
   res$differences <- "paper: R 4.0-era package versions, its own pre-processing scripts; engine: Bioconductor 3.23 versions, ALDEx2 and CLR as the engine runs them (pseudocount R-PSEUDO = 0.5), both groups' samples only"
