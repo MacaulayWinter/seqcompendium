@@ -185,6 +185,7 @@ q2_agreement <- function(units, layers, des = NULL) {
     }
     dv_skip <- if (ncol(m) > rule("R-DIVNETMAX")) sprintf("DivNet not run: %d features, more than %d (rule R-DIVNETMAX; its memory grows with features squared)", ncol(m), rule("R-DIVNETMAX")) else NULL
     dv <- if (!is.null(dv_skip)) NULL else tryCatch({
+      load_before_seed(DIVNET_LOADS)
       set.seed(seed_for(22))
       X <- stats::model.matrix(~ g)
       utils::capture.output(x <- suppressMessages(suppressWarnings(DivNet::divnet(W = m, X = X, tuning = "fast", ncores = 1))))

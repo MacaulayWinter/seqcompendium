@@ -63,6 +63,14 @@ clr <- function(m) { l <- log(m + rule("R-PSEUDO")); l - rowMeans(l) }
 
 seed_for <- function(offset) rule("R-SEED") + offset
 
+# Packages a method loads on its first call, after the engine has set its seed.
+# snow draws random numbers when it loads, so the first call in an R session
+# would follow a different random stream from every later one (V-E10).
+# DivNet's MCmat asks for doParallel, foreach and doSNOW even with ncores = 1
+# (it uses `&`, which does not short-circuit). They are loaded before the seed.
+load_before_seed <- function(pkgs) for (p in pkgs) suppressMessages(requireNamespace(p, quietly = TRUE))
+DIVNET_LOADS <- c("doParallel", "foreach", "doSNOW", "snow")
+
 # The per-sample offset: the denominator when the layer has one, else library
 # size. (Not `%||%`, which keeps only the first element.)
 offset_of <- function(ud) if (is.null(ud$den)) ud$lib else ud$den

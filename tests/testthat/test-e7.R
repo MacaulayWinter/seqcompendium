@@ -78,3 +78,32 @@ test_that("in the zero-inflated fixture, a feature emptied in one group x timepo
   expect_true(r$method_role == "not estimable" && grepl("no counts in treated", r$caveat))
   expect_false(any(q4$method_role[q4$feature == "toyG09" & q4$timepoint == "T0"] == "not estimable"))
 })
+
+test_that("Q2's DivNet gives the same result on the first call of an R session as on later ones (V-E10, D53)", {
+  # snow draws random numbers when it loads, and DivNet loads it on its first call
+  # even with ncores = 1; the engine loads it before setting the seed. Checked in a
+  # fresh R process, because this one may have loaded snow already.
+  skip_if(!nzchar(system.file(package = "seqcompendium")), "needs the installed package")
+  f <- tempfile(fileext = ".R"); o <- tempfile(fileext = ".rds")
+  writeLines(c("suppressPackageStartupMessages(library(seqcompendium)); e <- asNamespace('seqcompendium')",
+               "b <- file.path(tempdir(), 'toy'); make_toy_bundle(b)",
+               "bb <- e$read_bundle(b); g0 <- e$check_guide(bb$md, bb$guide); lc <- e$check_layers(bb$layers, g0$md)",
+               "des <- e$read_design(g0$md, bb$guide, g0$info); un <- e$contrast_units(lc$layers, des, e$design_cells(des))",
+               "first <- !'snow' %in% loadedNamespaces()",
+               "r1 <- e$q2_agreement(un, lc$layers, des); r2 <- e$q2_agreement(un, lc$layers, des)",
+               sprintf("saveRDS(list(first = first, r1 = r1, r2 = r2), '%s')", o)), f)
+  status <- system2(file.path(R.home("bin"), "Rscript"), f, stdout = FALSE, stderr = FALSE)
+  expect_identical(status, 0L)
+  x <- readRDS(o)
+  expect_true(x$first)                                     # the first call really was the session's first
+  a1 <- x$r1[x$r1$method_id == "A04", ]; a2 <- x$r2[x$r2$method_id == "A04", ]
+  expect_gt(sum(is.finite(as.numeric(a1$p))), 0)
+  expect_identical(a1, a2)
+})
+
+test_that("loading snow draws random numbers, which is why it is loaded before the seed (D53)", {
+  skip_if_not_installed("snow")
+  # A fresh R process, so snow is not loaded yet.
+  out <- system2(file.path(R.home("bin"), "Rscript"), c("-e", shQuote("set.seed(1); a <- runif(1); set.seed(1); invisible(loadNamespace('snow')); cat(identical(a, runif(1)))")), stdout = TRUE, stderr = FALSE)
+  expect_identical(utils::tail(out, 1), "FALSE")
+})

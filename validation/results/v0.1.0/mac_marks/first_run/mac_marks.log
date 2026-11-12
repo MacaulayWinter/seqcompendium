@@ -1,0 +1,80 @@
+=== phase ve1 2026-11-11 11:40:43
+11:40:47 V-E1 s001 V-E1 shotgun1 two_group n=10 started 
+12:37:37 V-E1 s001 V-E1 shotgun1 two_group n=10 done in 3408 s; error: NA ; profile_ok: TRUE 
+12:37:38 V-E1 s002 V-E1 shotgun1 blocks n=10 started 
+14:31:29 V-E1 s002 V-E1 shotgun1 blocks n=10 done in 6830 s; error: NA ; profile_ok: TRUE 
+14:31:30 V-E1 s003 V-E1 shotgun1 paired n=10 started 
+14:46:27 V-E1 s003 V-E1 shotgun1 paired n=10 done in 896 s; error: NA ; profile_ok: TRUE 
+14:46:27 V-E1 s004 V-E1 shotgun1 paired_blocks n=10 started 
+15:21:46 V-E1 s004 V-E1 shotgun1 paired_blocks n=10 done in 2118 s; error: NA ; profile_ok: TRUE 
+15:21:47 V-E1 s005 V-E1 shotgun1 longitudinal n=10 started 
+16:13:37 V-E1 s005 V-E1 shotgun1 longitudinal n=10 done in 3107 s; error: NA ; profile_ok: TRUE 
+16:13:37 V-E1 s006 V-E1 shotgun1 longitudinal_blocks n=10 started 
+16:13:49 V-E1 stopped after s005 for the V-E7b reproduction
+=== phase ve1 exit 137 2026-11-11 16:13:49
+=== phase ctl 2026-11-11 16:13:49
+=== phase ve1 (resume) 2026-11-11 16:16:45
+16:16:49 V-E1 s001 V-E1 shotgun1 two_group n=10 already done, skipped 
+16:16:49 V-E1 s002 V-E1 shotgun1 blocks n=10 already done, skipped 
+16:16:49 V-E1 s003 V-E1 shotgun1 paired n=10 already done, skipped 
+16:16:49 V-E1 s004 V-E1 shotgun1 paired_blocks n=10 already done, skipped 
+16:16:49 V-E1 s005 V-E1 shotgun1 longitudinal n=10 already done, skipped 
+16:16:50 V-E1 s006 V-E1 shotgun1 longitudinal_blocks n=10 started 
+runner pid 76277 started 2026-11-11 19:35:22
+=== phase ctl 2026-11-11 19:35:22 (disk 27 GB free)
+19:35:25 ctl 1 unknown stopped: TRUE 
+19:35:25 ctl 1 typo stopped: TRUE 
+19:35:25 ctl 2 unknown stopped: TRUE 
+19:35:25 ctl 2 typo stopped: TRUE 
+19:35:25 ctl 3 unknown stopped: TRUE 
+19:35:25 ctl 3 typo stopped: TRUE 
+19:35:25 ctl 4 unknown stopped: TRUE 
+19:35:25 ctl 4 typo stopped: TRUE 
+19:35:26 ctl 5 unknown stopped: TRUE 
+19:35:26 ctl 5 typo stopped: TRUE 
+19:35:26 ctl 6 unknown stopped: TRUE 
+19:35:26 ctl 6 typo stopped: TRUE 
+=== phase ctl exit 0 2026-11-11 19:35:26
+=== phase ve10 2026-11-11 19:35:26 (disk 27 GB free)
+19:35:29 ve10 toy run a 
+19:36:44 ve10 toy run b 
+19:37:55 ve10 second run of 1 
+20:32:38 ve10 second run of 2 
+22:20:49 ve10 second run of 3 
+22:35:35 ve10 second run of 4 
+=== phase ve10 exit 0 2026-11-11 23:09:42
+=== phase noctl 2026-11-11 23:09:42 (disk 27 GB free)
+23:09:47 noctl s001 V-E1 shotgun1 two_group n=10 started 
+00:03:58 noctl s001 V-E1 shotgun1 two_group n=10 done; warning: TRUE 
+00:03:58 noctl s002 V-E1 shotgun1 blocks n=10 started 
+01:49:20 noctl s002 V-E1 shotgun1 blocks n=10 done; warning: TRUE 
+01:49:21 noctl s003 V-E1 shotgun1 paired n=10 started 
+02:04:01 noctl s003 V-E1 shotgun1 paired n=10 done; warning: TRUE 
+02:04:02 noctl s004 V-E1 shotgun1 paired_blocks n=10 started 
+02:38:05 noctl s004 V-E1 shotgun1 paired_blocks n=10 done; warning: TRUE 
+02:38:05 noctl s005 V-E1 shotgun1 longitudinal n=10 started 
+03:25:21 noctl s005 V-E1 shotgun1 longitudinal n=10 done; warning: TRUE 
+03:25:22 noctl s006 V-E1 shotgun1 longitudinal_blocks n=10 started 
+04:55:50 noctl s006 V-E1 shotgun1 longitudinal_blocks n=10 done; warning: TRUE 
+=== phase noctl exit 0 2026-11-12 04:55:51
+=== phase marks 2026-11-12 04:55:51 (disk 27 GB free)
+  mark
+ V-E2b
+ V-E2b
+ V-E2b
+ V-E2b
+ V-E10
+                                                                                  scenario
+                                  (1) V-E1 bundles: no control sample in any Q1-Q11 result
+ (2) a control value changed to an unknown value or a typo: the run stops naming the value
+                                           (3) V-E1 bundles: every control in controls.csv
+                     (4) V-E1 bundles without controls: the no-controls warning is written
+                 main toy and the first 4 V-E1 bundles run twice: every CSV byte-identical
+ number  pass
+    1.0  TRUE
+    1.0  TRUE
+    1.0  TRUE
+    1.0  TRUE
+    0.6 FALSE
+=== phase marks exit 0 2026-11-12 04:55:55
+ALL REMAINING PHASES DONE 2026-11-12 04:55:55
