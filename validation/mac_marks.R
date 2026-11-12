@@ -104,6 +104,35 @@ if (phase == "ve10") {
   utils::write.csv(do.call(rbind, res), file.path(rdir, "ve10.csv"), row.names = FALSE)
 }
 
+# V-E10 confirmation after a fix (CLAUDE.md D53): both runs with the fixed engine,
+# each in its own R process (its own container), toy first, so each run's first
+# call of every method is the first in its session.
+#   ve10run <label>   the main toy and bundles 1-4 into out_<label>/
+#   ve10cmp <a> <b>   compares out_<a>/ with out_<b>/: ve10_<a>_<b>.csv and its mark row
+if (phase == "ve10run") {
+  lab <- args[4]; o <- file.path(rdir, paste0("out_", lab))
+  toy <- file.path(rdir, "toy_bundle"); if (!dir.exists(toy)) make_toy_bundle(toy)
+  stamp("ve10run", lab, "toy"); err <- engine(toy, file.path(o, "toy")); if (!is.na(err)) stop("toy: ", err)
+  for (s in utils::head(v1$scenario, 4)) { stamp("ve10run", lab, s); err <- engine(bdir(s), file.path(o, sprintf("s%03d", s))); if (!is.na(err)) stop("s", s, ": ", err) }
+  stamp("ve10run", lab, "done")
+}
+if (phase == "ve10cmp") {
+  a <- args[4]; b <- args[5]
+  csvs <- function(o) sort(list.files(o, pattern = "\\.csv$", recursive = TRUE))
+  same <- function(x, y) {
+    fa <- csvs(x); fb <- csvs(y)
+    differ <- fa[vapply(fa, function(f) !file.exists(file.path(y, f)) || !identical(unname(tools::md5sum(file.path(x, f))), unname(tools::md5sum(file.path(y, f)))), TRUE)]
+    data.frame(files = length(fa), same_file_set = identical(fa, fb), files_differing = length(differ), differing = paste(utils::head(differ, 10), collapse = "; "))
+  }
+  dirs <- c(toy = "toy", stats::setNames(sprintf("s%03d", utils::head(v1$scenario, 4)), utils::head(v1$label, 4)))
+  res <- do.call(rbind, lapply(names(dirs), function(n) cbind(bundle = if (n == "toy") "main toy" else n, same(file.path(rdir, paste0("out_", a), dirs[[n]]), file.path(rdir, paste0("out_", b), dirs[[n]])))))
+  utils::write.csv(res, file.path(rdir, sprintf("ve10_%s_%s.csv", a, b)), row.names = FALSE)
+  ok <- res$same_file_set & res$files_differing == 0
+  utils::write.csv(mark_row("V-E10", sprintf("main toy and the first 4 V-E1 bundles run twice (runs %s, %s; fixed engine): every CSV byte-identical", a, b), mean(ok), "= 1", all(ok), nrow(res)),
+                   file.path(rdir, sprintf("ve10_%s_%s_mark.csv", a, b)), row.names = FALSE)
+  print(res); stamp("V-E10 confirmation:", sum(ok), "of", nrow(res), "identical")
+}
+
 if (phase == "marks") {
   rows <- do.call(rbind, lapply(list.files(file.path(rdir, "rows"), pattern = "^s00[1-6]_", full.names = TRUE), utils::read.csv, stringsAsFactors = FALSE))
   ok <- is.na(rows$error); ctl <- utils::read.csv(file.path(rdir, "ctl.csv")); nc <- utils::read.csv(file.path(rdir, "noctl.csv")); v10 <- utils::read.csv(file.path(rdir, "ve10.csv"))
