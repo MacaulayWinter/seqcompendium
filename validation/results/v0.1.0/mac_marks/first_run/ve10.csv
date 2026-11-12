@@ -1,0 +1,6 @@
+"bundle","files","same_file_set","files_differing","differing"
+"main toy",32,TRUE,3,"03_results/Q2_alpha/results.csv; 04_agreement/Q2.csv; 05_leads/leads.csv"
+"s001 V-E1 shotgun1 two_group n=10",27,TRUE,1,"04_agreement/Q2.csv"
+"s002 V-E1 shotgun1 blocks n=10",27,TRUE,0,""
+"s003 V-E1 shotgun1 paired n=10",14,TRUE,0,""
+"s004 V-E1 shotgun1 paired_blocks n=10",14,TRUE,0,""

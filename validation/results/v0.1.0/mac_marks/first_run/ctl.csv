@@ -1,0 +1,37 @@
+"scenario","case","value","stopped","names_value","message"
+1,"unknown","spike_in_control",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'spike_in_control' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other).
+All checks are in /tmp/RtmpjH2bdI/ctl14f572c3a/out/00_input"
+1,"typo","negative_extracton",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'negative_extracton' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other); it looks like a typo of 'negative_extraction'.
+All checks"
+2,"unknown","spike_in_control",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'spike_in_control' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other).
+All checks are in /tmp/RtmpjH2bdI/ctl15e7070c5/out/00_input"
+2,"typo","negative_extracton",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'negative_extracton' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other); it looks like a typo of 'negative_extraction'.
+All checks"
+3,"unknown","spike_in_control",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'spike_in_control' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other).
+All checks are in /tmp/RtmpjH2bdI/ctl14c492da8/out/00_input"
+3,"typo","negative_extracton",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'negative_extracton' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other); it looks like a typo of 'negative_extraction'.
+All checks"
+4,"unknown","spike_in_control",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'spike_in_control' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other).
+All checks are in /tmp/RtmpjH2bdI/ctl13a8e2f64/out/00_input"
+4,"typo","negative_extracton",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'negative_extracton' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other); it looks like a typo of 'negative_extraction'.
+All checks"
+5,"unknown","spike_in_control",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'spike_in_control' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other).
+All checks are in /tmp/RtmpjH2bdI/ctl12c6c3a71/out/00_input"
+5,"typo","negative_extracton",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'negative_extracton' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other); it looks like a typo of 'negative_extraction'.
+All checks"
+6,"unknown","spike_in_control",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'spike_in_control' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other).
+All checks are in /tmp/RtmpjH2bdI/ctl1778f0e82/out/00_input"
+6,"typo","negative_extracton",TRUE,TRUE,"1 problem(s) to fix before the run can continue. Nothing has been assumed.
+  - `kind`: value 'negative_extracton' is not a sample_control value (allowed: none, negative_extraction, negative_pcr, negative_other, positive_mock, positive_other); it looks like a typo of 'negative_extraction'.
+All checks"
