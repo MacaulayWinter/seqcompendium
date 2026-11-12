@@ -235,13 +235,21 @@ not_estimable <- function(m, cell) {
   out
 }
 
+# The note for a method that stopped: what it said, on one line, kept short.
+fit_failed_note <- function(msg) {
+  msg <- gsub("[[:space:]]+", " ", trimws(paste(msg, collapse = " ")))
+  if (nchar(msg) > 300) msg <- paste0(substr(msg, 1, 297), "...")
+  sprintf("the method failed to fit: %s", if (nzchar(msg)) msg else "no error message")
+}
+
 # Agreement and describe-only methods for one unit. Each method's own BH
 # within the unit gives its calls.
 q4_agreement <- function(ud, feats, ids) {
   out <- list()
   for (id in ids) {
-    r <- tryCatch(FITS[[id]](ud, feats), error = function(e) NULL)
-    if (is.null(r)) { out[[id]] <- data.frame(feature = feats, method_id = id, effect = NA, p = NA, q = NA, call = NA, note = "the method failed to fit"); next }
+    # A method that stops keeps its own error message in the note (V-E7b, D55).
+    r <- tryCatch(FITS[[id]](ud, feats), error = function(e) conditionMessage(e))
+    if (is.character(r)) { out[[id]] <- data.frame(feature = feats, method_id = id, effect = NA, p = NA, q = NA, call = NA, note = fit_failed_note(r)); next }
     ok <- is.finite(r$p); qq <- rep(NA_real_, nrow(r)); qq[ok] <- stats::p.adjust(r$p[ok], "BH")
     out[[id]] <- data.frame(feature = r$feature, method_id = id, effect = r$effect, p = r$p, q = qq, call = !is.na(qq) & qq <= rule("R-FDR"), note = "")
   }
@@ -249,7 +257,10 @@ q4_agreement <- function(ud, feats, ids) {
 }
 
 describe_lefse <- function(ud, feats) {
-  rel <- t(ud$m[, feats, drop = FALSE] / pmax(rowSums(ud$m), 1))
+  # Relative abundance per million (lefser's own relativeAb() scale), not 0-1:
+  # on a 0-1 scale the within-group variances of rare features are so small that
+  # MASS::lda calls them "constant within groups" and LEfSe stops (V-E7b, D55).
+  rel <- t(ud$m[, feats, drop = FALSE] / pmax(rowSums(ud$m), 1) * 1e6)
   se <- SummarizedExperiment::SummarizedExperiment(assays = list(rel = rel), colData = S4Vectors::DataFrame(g = ud$g, row.names = ud$samples))
   set.seed(seed_for(44))
   r <- tryCatch(suppressMessages(suppressWarnings(lefser::lefser(se, classCol = "g", assay = "rel"))), error = function(e) conditionMessage(e))

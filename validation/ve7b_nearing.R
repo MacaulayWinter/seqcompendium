@@ -43,9 +43,11 @@ for (d in if (is.null(only)) names(SETS) else only) {
   ds <- if (is.na(err) && file.exists(file.path(o, "04_agreement", "Q4_describe_only.csv"))) utils::read.csv(file.path(o, "04_agreement", "Q4_describe_only.csv")) else NULL
   for (id in names(METHODS)) {
     n_engine <- if (!is.na(err)) NA else ve7b_engine_count(id, ag, ds)
+    failure <- if (!is.na(err)) "the engine run stopped" else ve7b_engine_failure(id, ag, ds)
     n_paper <- paper[[s$label]][paper$method == METHODS[[id]]]
     rows[[length(rows) + 1]] <- data.frame(dataset = d, paper_label = s$label, method = METHODS[[id]], samples = ncol(m), features = nrow(m),
-                                           engine = n_engine, paper = n_paper, equal = isTRUE(n_engine == n_paper), seconds = round(secs), error = err)
+                                           engine = n_engine, paper = n_paper, equal = isTRUE(n_engine == n_paper), seconds = round(secs), error = err,
+                                           method_failed = nzchar(failure), method_note = failure)
   }
   # The engine's own tables and notes are kept (a few MB), so a difference can be traced without rerunning.
   if (dir.exists(o)) ve7b_keep_engine_files(o, file.path(rdir, sprintf("ve7b_%s_engine", d)))
@@ -56,7 +58,9 @@ for (d in if (is.null(only)) names(SETS) else only) {
   # built from it; a later successful run replaces both files.
   ok_file <- file.path(rdir, sprintf("ve7b_%s.csv", d)); bad_file <- file.path(rdir, sprintf("ve7b_%s.failed.csv", d))
   if (is.na(err)) { utils::write.csv(res, ok_file, row.names = FALSE); unlink(bad_file) } else { utils::write.csv(res, bad_file, row.names = FALSE); unlink(ok_file) }
-  print(res[, c("dataset", "method", "samples", "features", "engine", "paper", "equal", "seconds", "error")], row.names = FALSE)
+  print(res[, c("dataset", "method", "samples", "features", "engine", "paper", "equal", "seconds", "error", "method_failed")], row.names = FALSE)
+  # A method that failed is reported as failed (engine count NA), never as 0 (D55).
+  if (any(res$method_failed)) cat("V-E7b: method(s) that failed inside the engine:", paste(sprintf("%s (%s)", res$method[res$method_failed], res$method_note[res$method_failed]), collapse = "; "), "\n")
   if (!is.na(err)) { cat("V-E7b: the engine run on", d, "stopped with an error; this task fails.\n"); quit(save = "no", status = 1) }
 }
 

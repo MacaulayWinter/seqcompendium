@@ -8,7 +8,8 @@ test_that("V-E7b: LEfSe's 'flagged nothing' row (feature NA) is not counted as a
   nothing <- data.frame(unit = "u", method_id = "D19", feature = NA_character_, lda_score = NA_real_, note = "LEfSe flagged no feature", role = "describe_only")
   failed <- transform(nothing, note = "LEfSe did not run: some error")
   expect_identical(ve7b_engine_count("D19", NULL, nothing), 0L)      # the flaw counted 1 here
-  expect_identical(ve7b_engine_count("D19", NULL, failed), 0L)
+  expect_true(is.na(ve7b_engine_count("D19", NULL, failed)))        # LEfSe did not run: failed, not 0 (D55)
+  expect_match(ve7b_engine_failure("D19", NULL, failed), "LEfSe did not run: some error")
   two <- data.frame(unit = "u", method_id = "D19", feature = c("asv1", "asv2", "asv2"), lda_score = c(3, 2.5, 2.5), note = NA, role = "describe_only")
   expect_identical(ve7b_engine_count("D19", NULL, two), 2L)          # a feature listed twice counts once
   expect_true(is.na(ve7b_engine_count("D19", NULL, NULL)))           # no LEfSe table at all: unknown, not 0
@@ -21,6 +22,21 @@ test_that("V-E7b: other methods are counted as BH q < 0.05 over finite p-values,
   expect_identical(ve7b_engine_count("D04", ag, NULL), 3L)
   # D17: 0.6, 0.003, 0.5 -> 1.
   expect_identical(ve7b_engine_count("D17", ag, NULL), 1L)
+})
+
+test_that("V-E7b: a method that failed inside the engine is reported as failed (NA, with its error), never 0 (D55)", {
+  # As on the cluster: ALDEx2 failed in q4_agreement, every D04 row has p = NA.
+  ag <- data.frame(method_id = c(rep("D04", 3), rep("D17", 3)), feature = rep(c("a", "b", "c"), 2), p = c(NA, NA, NA, 0.001, 0.2, 0.5),
+                   note = c(rep("the method failed to fit: cannot allocate vector of size 2.1 Gb", 3), rep("", 3)))
+  expect_true(is.na(ve7b_engine_count("D04", ag, NULL)))             # the old script gave 0 here
+  expect_match(ve7b_engine_failure("D04", ag, NULL), "cannot allocate vector")
+  expect_identical(ve7b_engine_count("D17", ag, NULL), 1L)
+  expect_identical(ve7b_engine_failure("D17", ag, NULL), "")
+  old_note <- transform(ag, note = ifelse(method_id == "D04", "the method failed to fit", ""))   # engine before D55: no message
+  expect_true(is.na(ve7b_engine_count("D04", old_note, NULL)))
+  no_p <- transform(ag, note = "")                                   # no note, but no p-value either
+  expect_true(is.na(ve7b_engine_count("D04", no_p, NULL)))
+  expect_true(is.na(ve7b_engine_count("D04", NULL, NULL)))
 })
 
 test_that("V-E7b: the engine's tables, notes and report are kept before the compendium is deleted", {

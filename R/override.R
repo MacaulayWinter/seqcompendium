@@ -140,8 +140,8 @@ mock_check <- function(layers, des, manifest_dir, ids) {
     ud <- list(m = round(m[o, , drop = FALSE]), g = g[o], den = NULL, lib = rowSums(m[o, , drop = FALSE]), samples = rownames(m)[o])
     feats <- prevalent(ud$m, ud$g)
     tst[[nm]] <- do.call(rbind, lapply(setdiff(ids, "D01"), function(id) {
-      r <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](ud, feats))), error = function(e) NULL)
-      if (is.null(r)) return(data.frame(layer = nm, method_id = id, calls = NA, result = "the method failed to fit"))
+      r <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](ud, feats))), error = function(e) conditionMessage(e))
+      if (is.character(r)) return(data.frame(layer = nm, method_id = id, calls = NA, result = fit_failed_note(r)))
       ok <- is.finite(r$p); qq <- rep(NA_real_, nrow(r)); qq[ok] <- stats::p.adjust(r$p[ok], "BH")
       k <- sum(!is.na(qq) & qq <= rule("R-FDR"))
       data.frame(layer = nm, method_id = id, calls = k, result = if (k > 0) "fails: reported differences between mock replicates" else "passes")

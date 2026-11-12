@@ -107,3 +107,37 @@ test_that("loading snow draws random numbers, which is why it is loaded before t
   out <- system2(file.path(R.home("bin"), "Rscript"), c("-e", shQuote("set.seed(1); a <- runif(1); set.seed(1); invisible(loadNamespace('snow')); cat(identical(a, runif(1)))")), stdout = TRUE, stderr = FALSE)
   expect_identical(utils::tail(out, 1), "FALSE")
 })
+
+test_that("a method that stops keeps its own error message in the agreement note (V-E7b, D55)", {
+  ud <- list(m = matrix(1:20, 4, dimnames = list(paste0("s", 1:4), paste0("f", 1:5))), g = factor(c("A", "A", "B", "B")))
+  a <- seqcompendium:::q4_agreement(ud, colnames(ud$m), "NOT_A_METHOD")   # FITS has no such method, so the call errors
+  expect_true(all(is.na(a$p)))
+  expect_true(all(grepl("^the method failed to fit: .+", a$note)))
+  expect_false(any(a$note == "the method failed to fit"))                 # the old note, with no reason
+  n <- seqcompendium:::fit_failed_note(c("line one\n  line two", "x"))
+  expect_identical(n, "the method failed to fit: line one line two x")
+  expect_lte(nchar(seqcompendium:::fit_failed_note(strrep("a", 1000))), 330)
+  expect_identical(seqcompendium:::fit_failed_note(""), "the method failed to fit: no error message")
+})
+
+test_that("LEfSe runs on rare features: input per million, not 0-1 (V-E7b, D55)", {
+  # 10 v 10 samples of 1e6 reads; f_rare differs (about 5 v 2000 reads), so its
+  # proportions (5e-6 v 2e-3) vary far less than MASS::lda's tolerance on a 0-1
+  # scale, which made lefser stop with "variables ... appear to be constant within groups".
+  # 2000, not a smaller difference: lefser lists features with LDA score >= 2 (its
+  # default, which the engine keeps); in the check of 2026-11-12, B means of 60, 500
+  # and 2000 reads gave f_rare scores 1.75, 2.66 and 3.21, and the old scale stopped in all three.
+  set.seed(1)
+  n <- 20; g <- factor(rep(c("A", "B"), each = n / 2))
+  rare <- ifelse(g == "A", rpois(n, 5), rpois(n, 2000)); other <- matrix(rpois(n * 6, 50), n)
+  m <- cbind(f_rare = rare, other, f_big = 1e6 - rare - rowSums(other))
+  colnames(m)[2:7] <- paste0("f", 1:6); rownames(m) <- paste0("s", seq_len(n))
+  r <- seqcompendium:::describe_lefse(list(m = m, g = g, samples = rownames(m)), colnames(m))
+  expect_false(any(grepl("did not run", r$note)), info = paste(unique(r$note), collapse = " | "))
+  expect_true("f_rare" %in% r$feature)
+  # The old 0-1 scale on the same data: lefser stops (kept as the record of the defect).
+  rel <- t(m / rowSums(m))
+  se <- SummarizedExperiment::SummarizedExperiment(assays = list(rel = rel), colData = S4Vectors::DataFrame(g = g, row.names = rownames(m)))
+  old <- tryCatch(suppressMessages(suppressWarnings(lefser::lefser(se, classCol = "g", assay = "rel"))), error = function(e) conditionMessage(e))
+  expect_true(is.character(old) && grepl("constant within groups", old))
+})

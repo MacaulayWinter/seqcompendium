@@ -49,13 +49,27 @@ ve7b_write_bundle <- function(sdir, d, s, b) {
 # LEfSe (D19) the features it reports (Q4_describe_only.csv). LEfSe always
 # writes one row: with feature NA it means LEfSe flagged nothing or did not run
 # (its note says which), so NA is never counted as a feature.
+# A method that failed is NA (unknown), never 0: on the cluster ALDEx2 failed
+# inside the engine and the old script counted it as 0 (V-E7b, D55).
 ve7b_engine_count <- function(id, ag, ds) {
-  if (id == "D19") {
-    if (is.null(ds)) return(NA_integer_)
-    return(length(unique(stats::na.omit(ds$feature[ds$method_id == "D19"]))))
-  }
+  if (nzchar(ve7b_engine_failure(id, ag, ds))) return(NA_integer_)
+  if (id == "D19") return(length(unique(stats::na.omit(ds$feature[ds$method_id == "D19"]))))
   x <- ag[ag$method_id == id & is.finite(ag$p), , drop = FALSE]
   sum(stats::p.adjust(x$p, "BH") < 0.05)
+}
+
+# Why the engine has no count for a method ("" when it has one): its table is
+# missing, LEfSe did not run, or the method failed to fit (the engine's note,
+# which carries the method's own error message since D55).
+ve7b_engine_failure <- function(id, ag, ds) {
+  tab <- if (id == "D19") ds else ag
+  if (is.null(tab)) return(sprintf("no %s table from the engine", if (id == "D19") "Q4_describe_only.csv" else "Q4.csv"))
+  x <- tab[tab$method_id == id, , drop = FALSE]
+  if (!nrow(x)) return("the method has no rows in the engine's table")
+  note <- if ("note" %in% names(x)) unique(stats::na.omit(x$note[grepl("failed to fit|did not run", x$note)])) else character(0)
+  if (length(note)) return(paste(note, collapse = " | "))
+  if (id != "D19" && !any(is.finite(x$p))) return("the method gave no p-value for any feature")
+  ""
 }
 
 # The engine's own tables, notes and report are copied out of the compendium
