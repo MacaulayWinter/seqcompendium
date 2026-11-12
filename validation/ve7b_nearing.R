@@ -66,7 +66,9 @@ for (d in if (is.null(only)) names(SETS) else only) {
 
 done <- file.path(rdir, sprintf("ve7b_%s.csv", names(SETS)))
 if (!all(file.exists(done))) { cat("waiting for:", basename(done[!file.exists(done)]), "\n"); quit(save = "no") }
-res <- do.call(rbind, lapply(done, utils::read.csv))
+# bind_rows fills columns one table lacks with NA (a table from before D55 has
+# no method_failed / method_note columns).
+res <- seqcompendium:::bind_rows(lapply(done, utils::read.csv))
 utils::write.csv(res, file.path(rdir, "ve7b_nearing.csv"), row.names = FALSE)
 utils::write.csv(data.frame(mark = "V-E7", scenario = sprintf("(b) Nearing 2022, %s: %d of %d method counts equal the paper's", paste(names(SETS), collapse = " and "), sum(res$equal), nrow(res)),
                             number = mean(res$equal), threshold = "every count equal (published counts are whole numbers)", pass = all(res$equal), runs = nrow(res)),

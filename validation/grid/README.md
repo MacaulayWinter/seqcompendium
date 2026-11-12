@@ -88,7 +88,7 @@ VAL=/path/to/work sbatch --export=ALL --array=1-2 validation/grid/slurm_ve7b_exa
 ```
 
 Without SLURM: `VAL=/path/to/work bash validation/grid/run_ve7b.sh 1` and `... run_ve7b.sh 2`.
-Results land in `$VAL/results_ve7b/`: `ve7b_<data set>.csv` per task, then
+Results land in `$VAL/results_ve7b/` (or `$VAL/$VE7B_OUT/` when `VE7B_OUT` is set): `ve7b_<data set>.csv` per task, then
 `ve7b_nearing.csv` and `ve7b_marks.csv` once both are done. Bring back that folder.
 
 ## Checking the environment first (optional)

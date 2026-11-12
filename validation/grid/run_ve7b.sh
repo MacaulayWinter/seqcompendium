@@ -3,6 +3,8 @@
 # task 1 = ArcticFireSoils, task 2 = ArcticFreshwaters. Uses the environment
 # built by setup_env.sh and the data fetched by prepare_ve7b.sh.
 #   VAL=<work folder> bash validation/grid/run_ve7b.sh <1|2>
+# Results go to $VAL/results_ve7b, or to $VAL/$VE7B_OUT when VE7B_OUT is set, so a
+# rerun (for example with a fixed engine, D55) never overwrites an earlier run's files.
 set -euo pipefail
 source validation/grid/need_conda.sh   # stops here, with a message, if conda is not on PATH
 : "${VAL:?set VAL}"; ENV_DIR="${SEQCOMP_ENV:-$VAL/env}"
@@ -11,4 +13,4 @@ case "$1" in 1) D=ArcticFireSoils ;; 2) D=ArcticFreshwaters ;; *) echo "task mus
 source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate "$ENV_DIR"
 source validation/grid/isolate_env.sh   # only the environment's own libraries (D44)
 export R_LIBS_USER="$ENV_DIR/Rlib" OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
-Rscript validation/ve7b_nearing.R "$VAL/nearing/Hackathon/Studies" "$VAL/nearing/source_data_all.xlsx" "$VAL/results_ve7b" "$D"
+Rscript validation/ve7b_nearing.R "$VAL/nearing/Hackathon/Studies" "$VAL/nearing/source_data_all.xlsx" "$VAL/${VE7B_OUT:-results_ve7b}" "$D"
