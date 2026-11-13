@@ -1,0 +1,34 @@
+queue pid 16775 armed 2026-11-12 14:09:11; source a8f69fa; waiting for V-E10 to finish
+2026-11-12 15:50:12 queue pid 16775 stopped before starting anything: step 1 runs now beside V-E10 (3 GB, 1 core); steps 2-3 re-queued
+step-1 pid 21637 started 2026-11-12 15:50:12; source a8f69fa
+=== ArcticFireSoils wilcoxon_lefse 2026-11-12 15:50:12 (disk 27 GB free)
+queue pid 21664 armed 2026-11-12 15:50:15; source a8f69fa; waiting for V-E10 to finish
+2026-11-12 15:50:17 ArcticFireSoils wilcoxon_lefse : writing the bundle 
+2026-11-12 15:50:23 147 samples (Control 48, Fire 99), 3656 prevalent features; Q4 agreement set: D06 D04 D17 
+2026-11-12 15:50:25 Wilcoxon (CLR) :  2252  (paper  2101 )  
+2026-11-12 15:50:50 LEfSe :  436  (paper  1978 )  
+Warning message:
+replacing previous import ‘S4Arrays::makeNindexFromArrayViewport’ by ‘DelayedArray::makeNindexFromArrayViewport’ when loading ‘SummarizedExperiment’ 
+2026-11-12 15:50:50 wrote /work/ve7b_quick/ve7b_quick_ArcticFireSoils_wilcoxon_lefse.csv ; ALDEx2 1.44.0 ; lefser 1.22.0 
+=== ArcticFireSoils wilcoxon_lefse exit 0 2026-11-12 15:50:50
+V-E7b QUICK STEP 1 DONE 2026-11-12 15:50:50
+2026-11-12 16:00:21 queue pid 21664 stopped while waiting (nothing started): replaced by the fully guarded queue (memory-pressure, HALTED, status file)
+queue pid 22948 armed 2026-11-12 16:00:21; source a8f69fa; waiting for V-E10 to finish
+2026-11-13 02:57:08 Mac free: starting
+=== ArcticFreshwaters aldex 2026-11-13 02:57:08 (disk 27 GB free, memory free 50%, cap 8g)
+2026-11-13 02:57:12 ArcticFreshwaters aldex : writing the bundle 
+2026-11-13 02:57:38 934 samples (Lake 471, Watershed 463), 1069 prevalent features; Q4 agreement set: D06 D04 D17 
+2026-11-13 03:00:24 ALDEx2 :  667  (paper  184 )  
+Warning message:
+replacing previous import ‘S4Arrays::makeNindexFromArrayViewport’ by ‘DelayedArray::makeNindexFromArrayViewport’ when loading ‘SummarizedExperiment’ 
+2026-11-13 03:00:24 wrote /work/ve7b_quick/ve7b_quick_ArcticFreshwaters_aldex.csv ; ALDEx2 1.44.0 ; lefser 1.22.0 
+=== ArcticFreshwaters aldex exit 0 2026-11-13 03:00:24
+=== ArcticFreshwaters wilcoxon_lefse 2026-11-13 03:00:24 (disk 24 GB free, memory free 44%, cap 6g)
+2026-11-13 03:00:28 ArcticFreshwaters wilcoxon_lefse : writing the bundle 
+2026-11-13 03:00:54 934 samples (Lake 471, Watershed 463), 1069 prevalent features; Q4 agreement set: D06 D04 D17 
+2026-11-13 03:00:55 Wilcoxon (CLR) :  958  (paper  255 )  
+2026-11-13 03:01:23 LEfSe :  710  (paper  239 )  
+Warning message:
+replacing previous import ‘S4Arrays::makeNindexFromArrayViewport’ by ‘DelayedArray::makeNindexFromArrayViewport’ when loading ‘SummarizedExperiment’ 
+2026-11-13 03:01:23 wrote /work/ve7b_quick/ve7b_quick_ArcticFreshwaters_wilcoxon_lefse.csv ; ALDEx2 1.44.0 ; lefser 1.22.0 
+=== ArcticFreshwaters wilcoxon_lefse exit 0 2026-11-13 03:01:23
