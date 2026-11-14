@@ -1,0 +1,6 @@
+"mark","scenario","number","threshold","pass","runs"
+"V-E1","S1: 6 designs, profile equals the generator's truth",1,"= 1",TRUE,6
+"V-E8","every_question",1,"= 1",TRUE,6
+"V-E8","p_floor",1,"= 1",TRUE,6
+"V-E8","no_pooling",1,"= 1",TRUE,6
+"V-E8","figures_csv_only",1,"= 1",TRUE,6
