@@ -51,3 +51,59 @@ test_that("V-E7b: the engine's tables, notes and report are kept before the comp
   expect_true(all(file.exists(file.path(k, kept))))
   unlink(k, recursive = TRUE)
 })
+
+# V-E7(c) scorer rule (PREREGISTRATION section 9, Part B; the default's rows are in the default table).
+# Hand-made tables only, never real data. `df` is the default table (results.csv), `ag` the alternatives (Q4.csv).
+test_that("V-E7(c) scorer: a method only in the default table is counted from it", {
+  df <- data.frame(method_id = "D04", feature = c("a", "b", "c"), p = c(0.001, 0.01, 0.9))   # BH: 0.003, 0.015, 0.9 -> 2
+  ag <- data.frame(method_id = "D17", feature = c("a", "b"), p = c(0.001, 0.5))
+  expect_identical(ve7b_count_source("D04", ag, NULL, df), "default")
+  expect_identical(ve7b_engine_count("D04", ag, NULL, df), 2L)
+  expect_identical(ve7b_engine_failure("D04", ag, NULL, df), "")
+})
+
+test_that("V-E7(c) scorer: a method only in the alternatives table is counted as before", {
+  df <- data.frame(method_id = "D04", feature = c("a", "b"), p = c(0.001, 0.9))
+  ag <- data.frame(method_id = "D17", feature = c("a", "b", "c"), p = c(0.001, 0.002, 0.8))  # BH: 0.003, 0.003, 0.8 -> 2
+  expect_identical(ve7b_count_source("D17", ag, NULL, df), "alternatives")
+  expect_identical(ve7b_engine_count("D17", ag, NULL, df), 2L)
+})
+
+test_that("V-E7(c) scorer: a method in both tables uses the default's rows", {
+  df <- data.frame(method_id = "D04", feature = c("a", "b", "c"), p = c(0.001, 0.002, 0.003))   # 3
+  ag <- data.frame(method_id = "D04", feature = c("a", "b", "c"), p = c(0.9, 0.9, 0.9))         # 0
+  expect_identical(ve7b_count_source("D04", ag, NULL, df), "default")
+  expect_identical(ve7b_engine_count("D04", ag, NULL, df), 3L)
+})
+
+test_that("V-E7(c) scorer: a method in neither table is NA and failed, as before", {
+  df <- data.frame(method_id = "D04", feature = "a", p = 0.001)
+  ag <- data.frame(method_id = "D17", feature = "a", p = 0.001)
+  expect_true(is.na(ve7b_engine_count("D06", ag, NULL, df)))
+  expect_match(ve7b_engine_failure("D06", ag, NULL, df), "no rows")
+})
+
+test_that("V-E7(c) scorer: a q exactly at 0.05 is not counted, one just below is", {
+  # One feature: BH q equals p. 0.05 is not < 0.05; 0.0499 is.
+  expect_identical(ve7b_engine_count("D04", NULL, NULL, data.frame(method_id = "D04", feature = "a", p = 0.05)), 0L)
+  expect_identical(ve7b_engine_count("D04", NULL, NULL, data.frame(method_id = "D04", feature = "a", p = 0.0499)), 1L)
+})
+
+test_that("V-E7(c) scorer: a default method with no p-value is NA, with the old reason", {
+  df <- data.frame(method_id = "D04", feature = c("a", "b"), p = c(NA_real_, NA_real_))
+  expect_true(is.na(ve7b_engine_count("D04", NULL, NULL, df)))
+  expect_match(ve7b_engine_failure("D04", NULL, NULL, df), "gave no p-value")
+})
+
+test_that("V-E7(c) scorer: a default method that failed keeps its error message", {
+  df <- data.frame(method_id = "D04", feature = c("a", "b"), p = c(NA_real_, NA_real_),
+                   note = "the method failed to fit: out of memory")
+  expect_true(is.na(ve7b_engine_count("D04", NULL, NULL, df)))
+  expect_match(ve7b_engine_failure("D04", NULL, NULL, df), "out of memory")
+})
+
+test_that("V-E7(c) scorer: without the default table the old behaviour is unchanged (V-E7(b) scoring)", {
+  ag <- data.frame(method_id = "D04", feature = c("a", "b"), p = c(0.001, 0.9))
+  expect_identical(ve7b_engine_count("D04", ag, NULL), 1L)
+  expect_identical(ve7b_count_source("D04", ag, NULL), "alternatives")
+})
