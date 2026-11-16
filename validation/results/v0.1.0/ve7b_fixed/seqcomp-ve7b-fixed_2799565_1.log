@@ -1,0 +1,11 @@
+ArcticFireSoils: 147 samples, 3656 features after the filter; engine starting 2026-11-12 13:52:28
+         dataset         method samples features engine paper equal seconds
+ ArcticFireSoils         ALDEx2     147     3656     NA   525 FALSE  184830
+ ArcticFireSoils Wilcoxon (CLR)     147     3656   2252  2101 FALSE  184830
+ ArcticFireSoils          LEfSe     147     3656    436  1978 FALSE  184830
+ error method_failed
+  <NA>          TRUE
+  <NA>         FALSE
+  <NA>         FALSE
+V-E7b: method(s) that failed inside the engine: ALDEx2 (the method has no rows in the engine's table) 
+waiting for: ve7b_ArcticFreshwaters.csv 

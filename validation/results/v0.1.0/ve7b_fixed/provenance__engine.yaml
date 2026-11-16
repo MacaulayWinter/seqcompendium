@@ -1,0 +1,8 @@
+engine: seqcompendium
+engine_version: 0.0.0.9005
+rules_version: 2026-11-06.1
+r_version: 4.6.1
+seeds:
+  engine: R-SEED 20261029; each step adds a fixed offset
+  bundle: not stated by the bundle
+run_at: 2026-11-14 17:12:54 GMT
