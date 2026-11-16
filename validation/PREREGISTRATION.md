@@ -128,3 +128,152 @@ Master seed **20261029**. Scenarios are numbered in the order of the tables belo
    shotgun, the 3rd 16S).
 4. If it still fails, or the fix would need a mark or a decided design choice changed,
    it goes to the user. A mark is never quietly loosened.
+
+## 9. Reference marks for the differential-abundance claim (Q4): V-E7(c)
+
+Added 2026-11-16, after the V-E7(b) result on ArcticFireSoils and **before any reference named below has
+been run or its numbers opened.** Sections 1-8 are unchanged. V-E7(b) stays in §5 and its result stays on
+record. Decisions: see `CLAUDE.md` (D58, the principle; and the entry for this section).
+
+### 9.1 Why
+
+A published number is not infallible. A mark that compares the engine with one paper can fail because the paper
+is wrong, and can pass because the paper shares the engine's mistake. This section judges the Q4 claim against
+**at least three independent references**, chosen blind to their numbers.
+
+### 9.2 Grounds for reasonable doubt about a reference (the only four)
+
+A failed comparison is **never** by itself a ground. Doubt about a reference is accepted only on these grounds,
+each checkable by someone who does not know our result:
+
+- **G1 Old or unavailable software:** the paper's tool or versions cannot be installed any more, or are years
+  older than anything the engine can run; evidence: the paper's methods name versions that no longer install, or
+  the repository is gone.
+- **G2 Underspecified methods:** the paper does not say how its number was computed, so it cannot be repeated;
+  evidence: a count has more than one reasonable definition, the paper gives none, and the paper's value is reached
+  by none of the reasonable ways.
+- **G3 Self-inconsistent counts:** the paper's own numbers contradict each other (a count above the number of
+  features tested; text and supplement differ).
+- **G4 A documented pre-processing difference that moves our number across the paper's:** reproducing the
+  paper's step (not just arguing it) and re-running crosses the paper's number; the repeat run is kept.
+
+Not grounds: "the engine disagrees", "the paper is old", "other papers disagree with it".
+
+### 9.3 How references are chosen
+
+A reference is **independent** if it is a different paper, with different data, and not by the same group or the
+authors of a method it tests. Several data sets from one paper are **one** reference. Rules, applied in order
+before any reference's numbers are opened:
+
+1. Data are public and **actually deposited** (the deposit's file listing holds the feature tables).
+2. The paper's counts of significant features, or effect sizes, for methods the engine shares are in **a table or
+   a deposited results file**; a count that exists only in a figure is allowed only if the pre-registration says so
+   below and names the reading error.
+3. The software is installable (older versions allowed if each can be installed in a separate library).
+4. Among papers that meet 1-3, **alphabetical order of first author** (C-locale) breaks ties.
+5. A reference cannot be dropped after its numbers are seen. If it is dropped for a reason fixed here (its data
+   prove unreadable), it is replaced by the next in order and the swap is reported.
+
+**Planted-truth data** (the engine's own generator) counts as **one** of the three, not an extra.
+
+### 9.4 The Q4 reference list (fixed; approved by the user 2026-11-16)
+
+| # | Reference | What is compared | Limits (written here, before any run) |
+|---|---|---|---|
+| 1 | **Planted truth** | V-E3 and V-E4 on **fresh** templates (the 4th and 5th shotgun and the 3rd 16S in the §2 order), with new seeds (+ 500000, §8 step 3) | none beyond the marks' own |
+| 2 | **Wallen 2021** (BMC Bioinformatics 22:265, doi 10.1186/s12859-021-04193-6; sole author, Univ. of Alabama at Birmingham) | Counts of features with q < 0.05 per method, on its two Parkinson's cohorts, from its supplementary Tables S3-S6 and the deposited per-method results (GitHub `zwallen/Wallen_DAMethodCompare_2021`, phyloseq objects `PhyloseqObjects/Dataset1` and `Dataset2`) | (a) **Older package versions** (R 4.0.5; ALDEx2 1.22.0, DESeq2 1.30.1, ANCOM-BC 1.0.5, edgeR 3.32.1, LEfSe 1.0.8); a difference explained only by a version is reported, not passed, and can be tested in a separate library. (b) **No raw-read accession**; only the phyloseq objects are deposited. (c) **One group, two cohorts: one reference.** (d) The paper has unfiltered and 10%-prevalence variants; **the 10% variant is compared** (the engine's R-PREV = 10%). (e) Author check, §9.9 |
+| 3 | **Zhou 2022** (Genome Biology 23:95, the LinDA paper; Zhou and co-authors) | Counts of features per method across FDR levels on its four real data sets (CDI, IBD, RA, SMOKE), from the deposited scripts and outputs (Zenodo doi 10.5281/zenodo.6326019, 5.0 MB) and the paper's figures | (a) **Method-author reference, not neutral:** the authors developed LinDA, one of the engine's methods. (b) **LinDA is scored on its own line** (it reproduces its authors' own code); ALDEx2, Wilcoxon and the ANCOM-BC family count towards "congruent". (c) Counts that exist only in a figure are read with the reading error stated in 9.6 *before* the figure is read. (d) Package versions are mostly unstated (R 4.0.3 only) |
+| optional 4th | **Pelto 2025** (Brief Bioinform; Univ. of Turku), the authors' script run by us | The 14 methods run with the authors' own `run_daa_methods.R` on their curated data, versus the engine's Q4 methods on the same data sets | **Not independent of Pelto's code; not a published count; cannot count towards the three.** Adds evidence beyond the minimum. Subset rule, 9.8 |
+
+**The method-author rule.** At least **one** published reference must come from authors with no interest in an
+engine method. Here that is Wallen 2021. A pass needs it. Zhou 2022 alone can never carry the verdict that a
+different reference was poor. The report and the release notes name which references are by method authors.
+
+### 9.5 What "congruent" means (frozen before any run)
+
+For each published reference, **per method the engine shares with it** (LinDA scored on its own line):
+
+1. **Count agreement.** The engine's count of features at BH q < 0.05 is within **T_count** of the reference's, where
+   T_count = **[[T_COUNT: to be written after the repeat runs, before this file is merged]]**. The rule for setting it:
+   run the engine's method on the same data at least 10 times with different seeds; T_count is the larger of
+   (a) the observed range of those repeat counts as a share of their mean, and (b) for a method with no
+   randomness (Wilcoxon on CLR), a floor of 5% (the pseudocount alone moved one count by 1.5% in the 2026-11-11
+   diagnosis). For a count read from a figure, T_count is also never less than **twice the reading error**,
+   stated in 9.6.
+2. **Direction.** Of the features significant in both, at least **95%** have the same sign of effect.
+3. **Ranking.** Where the reference publishes feature-level results, the Spearman correlation of effect sizes
+   across features significant in either is at least **0.8**. If it publishes only counts, rule 3 does not apply
+   to it, and the report says so.
+
+The numbers 95% and 0.8 are fixed here. A reference is **congruent** if every method (other than
+LinDA) meets all three rules that apply; LinDA's line is reported, and counts towards "congruent" only for
+references that are not by LinDA's authors.
+
+**Planted truth** is congruent when V-E3 (null calibration, ≤ 0.142) and V-E4 (recovery, ≥ 0.80) both pass on the
+fresh templates.
+
+A tolerance is never changed after a result is seen.
+
+### 9.6 Reading counts from a figure
+
+If a count exists only in a figure (parts of Zhou 2022; Weiss-type cases), a **reading error** is fixed first: a second independent reading is not available, so the error is taken as **half the smallest tick interval of the
+axis**, written down before the figure is read, and the figure is read once. A deposited file that gives the
+value replaces the reading.
+
+### 9.7 Outcomes (fixed in advance)
+
+N = the number of independent references actually run (counting planted truth).
+
+| Result | Status of V-E7(c) | What is said |
+|---|---|---|
+| N ≥ 3 and every reference congruent, including the method-author-free one | **Pass.** The engine works on Q4; the first reference (Nearing 2022) was a poor reference for it | Each reference's numbers and its ground (9.2) are reported |
+| Planted truth fails | **Fail**, whatever the papers say | The engine is wrong on known truth |
+| Planted truth congruent, some published reference not | **Unresolved; not a pass** | Each failure reported by name; the mark stays failed until the user decides |
+| Planted truth congruent, no published reference congruent | **Fail** | The engine agrees only with itself |
+| N < 3, or the method-author-free reference cannot be run | **Not confirmed**, never a pass | Said plainly |
+
+There is no selection to a pass: all references are run and reported; a pass needs all.
+
+### 9.8 The optional fourth reference: dataset-subset rule (Pelto 2025)
+
+Applies only if run; it never changes the outcome table above.
+- From the **50 separate-study data sets** in the authors' curated data (the data `.rds`, not any result file),
+  keep 16S data sets with **fewer than 150 samples**; sort by data-set name in **C-locale alphabetical order**; take
+  the **first 5** (a size and Mac-time choice, written before any data set is opened).
+- The authors' script is run **unchanged**, at the authors' defaults, in a separate library at its stated versions
+  where installable; the engine's Q4 methods are run on the same 5 data sets.
+- Congruence per method, as 9.5; because both sides are our runs, T_count is the repeat variation on our own data
+  (no floor from a figure). LinDA on its own line.
+- No result file in the deposit is opened before this section is merged.
+
+### 9.9 The author check for Wallen 2021 (recorded 2026-11-16, read-only)
+
+The sole listed author is Zachary D. Wallen (Department of Neurology, University of Alabama at Birmingham), from
+PubMed. The engine's methods and their authors, to the best of my knowledge: ALDEx2 (Fernandes, Gloor and co-authors),
+ANCOM and ANCOM-BC (Mandal, Lin, Peddada and co-authors), DESeq2 (Love, Huber, Anders), edgeR (Robinson, McCarthy,
+Smyth), limma (Smyth and co-authors), metagenomeSeq (Paulson and co-authors), LEfSe (Segata and co-authors), LinDA
+(Zhou and co-authors). No overlap with Wallen. His repository's own `DAreport` function is his own reporting code, not an
+engine method. **Recorded as: no known stake in an engine method; the author-name comparison is from memory and a one-line
+PubMed check, not an independent conflict-of-interest declaration.**
+
+### 9.10 No rescuing
+
+- **V-E7(b) on ArcticFireSoils stays a recorded fail** (engine 288 / 2252 / 436 against 525 / 2101 / 1978;
+  `validation/results/v0.1.0/ve7b_fixed/`). It is not edited, softened or re-scored by this section.
+- Nearing 2022 stays a recorded reference with its fail; it is not one of the three.
+- This section applies to **V-E7(c)** and to marks written after it. It is not applied back to any earlier result.
+- The ArcticFreshwaters task of the rerun is scored under V-E7(b) as pre-registered, as a second data point, and does
+  not change the above.
+
+### 9.11 The release (tag) rule
+
+- v0.1.0 is tagged only when every pre-registered mark passes, **where V-E7(c) is the gate for the claim V-E7(b)
+  tested** (the user's approval, 2026-11-16; the old V-E7(b) fail stays in the release notes beside it).
+- Until V-E7(c) passes, no tag. Runs happen only after E7 has merged.
+
+### 9.12 Where and when it runs
+
+Quick counts (the engine's Q4 agreement and describe-only methods only, as `validation/ve7b_quick.R`; no override
+check) on the Mac for the small data (Wallen's two tables are about 3 MB); the full engine on ISCA for anything
+large, by scripts Claude prepares and the user submits (no email, account or path in them). The planted-truth marks
+run as V-E3 and V-E4 do. Results go to `validation/results/<release>/` as small tables only.
