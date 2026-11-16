@@ -193,13 +193,31 @@ different reference was poor. The report and the release notes name which refere
 
 For each published reference, **per method the engine shares with it** (LinDA scored on its own line):
 
-1. **Count agreement.** The engine's count of features at BH q < 0.05 is within **T_count** of the reference's, where
-   T_count = **[[T_COUNT: to be written after the repeat runs, before this file is merged]]**. The rule for setting it:
-   run the engine's method on the same data at least 10 times with different seeds; T_count is the larger of
-   (a) the observed range of those repeat counts as a share of their mean, and (b) for a method with no
-   randomness (Wilcoxon on CLR), a floor of 5% (the pseudocount alone moved one count by 1.5% in the 2026-11-11
-   diagnosis). For a count read from a figure, T_count is also never less than **twice the reading error**,
-   stated in 9.6.
+1. **Count agreement.** The engine's count of features at BH q < 0.05 differs from the reference's by at most
+   **max(t_rel x the reference's count, t_abs)** features, with t_rel and t_abs fixed per method by the repeat
+   measurement of 2026-11-16 (below). For a count read from a figure, the allowance is also never less than
+   **twice the reading error**, stated in 9.6.
+
+   **How the allowance was measured (before any reference was run or opened).** The engine's Q4 methods were run on
+   the feature tables of Wallen 2021 (two Parkinson's disease cohorts: 333 samples and 6,844 taxa; 507 samples and
+   12,198 taxa), with the engine's own seeds and then 10 shifted seed sets (11 runs per method and table), at the
+   10% prevalence filter. The paper's counts were not read. Spread of the counts over the 11 runs:
+
+   | Method | Table 1 counts | Table 2 counts |
+   |---|---|---|
+   | LinDA (D09, the default here) | 43 in all runs | 104 in all runs |
+   | ANCOM-BC2 (D06) | 139 in all runs | 367 in all runs |
+   | Wilcoxon on CLR (D17) | 14 in all runs | 54 in all runs |
+   | LEfSe (D19) | 64 in all runs | 60 in all runs |
+   | ALDEx2 (D04) | 1 to 3 | 13 to 14 |
+
+   **Rule for the allowance.** t_rel = the larger of 5% and the observed range as a share of the mean on the table
+   where the method's mean count is larger; t_abs = the largest observed range in features over the two tables.
+   Values: **LinDA, ANCOM-BC2, Wilcoxon on CLR and LEfSe: t_rel = 5%, t_abs = 0** (no variation was seen, so the
+   5% floor applies; it stands for package-version and pseudocount differences, the pseudocount alone moving one
+   count by 1.5% in the 2026-11-11 diagnosis). **ALDEx2: t_rel = 8%** (7.5% on table 2, rounded up) and
+   **t_abs = 2 features** (the range on table 1; a relative allowance alone would be 88% there and mean nothing).
+   Evidence: `validation/results/v0.1.0/tcount/`.
 2. **Direction.** Of the features significant in both, at least **95%** have the same sign of effect.
 3. **Ranking.** Where the reference publishes feature-level results, the Spearman correlation of effect sizes
    across features significant in either is at least **0.8**. If it publishes only counts, rule 3 does not apply
@@ -242,7 +260,7 @@ Applies only if run; it never changes the outcome table above.
   the **first 5** (a size and Mac-time choice, written before any data set is opened).
 - The authors' script is run **unchanged**, at the authors' defaults, in a separate library at its stated versions
   where installable; the engine's Q4 methods are run on the same 5 data sets.
-- Congruence per method, as 9.5; because both sides are our runs, T_count is the repeat variation on our own data
+- Congruence per method, as 9.5; because both sides are our runs, the allowance is the repeat variation measured on our own data for the same method and tables, with no reading-error term
   (no floor from a figure). LinDA on its own line.
 - No result file in the deposit is opened before this section is merged.
 
