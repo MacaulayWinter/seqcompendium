@@ -185,6 +185,10 @@ before any reference's numbers are opened:
 | 3 | **Zhou 2022** (Genome Biology 23:95, the LinDA paper; Zhou and co-authors) | Counts of features per method across FDR levels on its four real data sets (CDI, IBD, RA, SMOKE), from the deposited scripts and outputs (Zenodo doi 10.5281/zenodo.6326019, 5.0 MB) and the paper's figures | (a) **Method-author reference, not neutral:** the authors developed LinDA, one of the engine's methods. (b) **LinDA is scored on its own line** (it reproduces its authors' own code); ALDEx2, Wilcoxon and the ANCOM-BC family count towards "congruent". (c) Counts that exist only in a figure are read with the reading error stated in 9.6 *before* the figure is read. (d) Package versions are mostly unstated (R 4.0.3 only) |
 | optional 4th | **Pelto 2025** (Brief Bioinform; Univ. of Turku), the authors' script run by us | The 14 methods run with the authors' own `run_daa_methods.R` on their curated data, versus the engine's Q4 methods on the same data sets | **Not independent of Pelto's code; not a published count; cannot count towards the three.** Adds evidence beyond the minimum. Subset rule, 9.8 |
 
+**What is counted.** For every published reference, the compared quantity is the **quick count**: the number of features with BH q < 0.05 from the
+engine's own Q4 methods run on the reference's feature table with the engine's prevalence rule, **without the override check** (9.12). A
+full-engine run is an extra report and is never the mark.
+
 **The method-author rule.** At least **one** published reference must come from authors with no interest in an
 engine method. Here that is Wallen 2021. A pass needs it. Zhou 2022 alone can never carry the verdict that a
 different reference was poor. The report and the release notes name which references are by method authors.
@@ -291,7 +295,10 @@ PubMed check, not an independent conflict-of-interest declaration.**
 
 ### 9.12 Where and when it runs
 
-Quick counts (the engine's Q4 agreement and describe-only methods only, as `validation/ve7b_quick.R`; no override
-check) on the Mac for the small data (Wallen's two tables are about 3 MB); the full engine on ISCA for anything
-large, by scripts Claude prepares and the user submits (no email, account or path in them). The planted-truth marks
-run as V-E3 and V-E4 do. Results go to `validation/results/<release>/` as small tables only.
+**V-E7(c)'s counts are quick counts for every published reference**: the engine's Q4 agreement and describe-only methods and the default's fit
+(as `validation/ve7b_quick.R` does), with **no override check**. A full-engine run on a reference is an **extra report, never the mark**, so a
+limit of the override check (for example, too few common features on a sparse table for its planted draw) cannot stop or change the mark.
+The counts of each method do not depend on the override check, which only chooses the default. Quick counts run on the Mac for the small data
+(Wallen's two tables are about 3 MB); anything too large for the Mac runs the same quick-count script on ISCA, by scripts Claude prepares and the
+user submits (no email, account or path in them). The planted-truth marks run as V-E3 and V-E4 do. Results go to `validation/results/<release>/`
+as small tables only.
