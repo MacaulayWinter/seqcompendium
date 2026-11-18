@@ -30,7 +30,7 @@ test_that("E1-M10: figures are drawn in a fresh R process from the CSVs alone", 
   expect_true(all(mapply(function(s, c) grepl(s, c, fixed = TRUE), idx$source_csv, idx$caption)))
 })
 
-test_that("D59: each PCoA panel's shares are in (0, 1], axis 1 >= axis 2, and its title shows them", {
+test_that("D61: each PCoA panel's shares are in (0, 1], axis 1 >= axis 2, and its title shows them", {
   o <- out_dir(); run_compendium(toy(), o)
   d <- rd(file.path(o, "03_results", "Q3_composition", "ordination.csv"))
   for (k in c("axis1_share", "axis2_share", "negative_eigen_share")) d[[k]] <- as.numeric(d[[k]])
