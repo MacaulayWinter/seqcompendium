@@ -20,10 +20,9 @@ Plan: `G4_PLAN.md` (pushed before any run). Engine tables: `ve7c_zhou_<set>_<mod
 | (LinDA, own line) CDI / IBD / RA / SMOKE | | 3/33/24/37 | 3/42/44/32 | 3/26/46/29 | 3/23/44/11 |
 
 ALDEx2 meets the count rule on all three sets in every run (it is a method that returns almost nothing here). Of the other methods only LinDA on CDI and RA meet it.
-LinDA on IBD and SMOKE do not (26 vs 23, allowance 1.15; 29 vs 11). The pre-processing closed some of the gap (CDI ANCOM-BC2 69 to 35; IBD Wilcoxon 208 to 113) and widened none
-that mattered, but no method that failed now passes.
+LinDA on IBD and SMOKE do not (26 vs 23, allowance 1.15; 29 vs 11). The pre-processing closed some of the gap (CDI ANCOM-BC2 69 to 35; IBD Wilcoxon 208 to 113) but no method that failed in the original run passes now.
 
 Limits, stated plainly. (1) SMOKE's subject random effect is not expressed (the engine's Q4 has no random effect); SMOKE has only LinDA columns in Zhou's deposit, so it is
-on LinDA's own line either way. (2) The covariates were carried as the engine's `batch` role: IBD was adjusted for Antibiotic, SMOKE for Sex (see the meta files); Zhou
-adjusted only ANCOM-BC and LinDA-type models in the same way, while Wilcoxon cannot adjust. (3) ANCOM-BC 1.0.5 in the paper vs ANCOM-BC2 in the engine is not removed by G4;
+on LinDA's own line either way. (2) The covariates were carried as the engine's `batch` role: IBD was adjusted for Antibiotic, SMOKE for Sex (see the meta files); the engine's Wilcoxon on CLR cannot adjust
+(it is recorded as not adjusted). (3) ANCOM-BC 1.0.5 in the paper vs ANCOM-BC2 in the engine is not removed by G4;
 Zhou's winsorising and the engine's own methods are different procedures. (4) Zhou's group authored LinDA, so under 9.7 G4 alone could not give a pass; none is claimed.
