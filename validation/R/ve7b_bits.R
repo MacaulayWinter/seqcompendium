@@ -45,24 +45,37 @@ ve7b_write_bundle <- function(sdir, d, s, b) {
 }
 
 # The engine's count of significant features for one method, counted as the
-# paper counts them: BH q < 0.05 over the method's finite p-values (Q4.csv); for
+# paper counts them: BH q < 0.05 over the method's finite p-values; for
 # LEfSe (D19) the features it reports (Q4_describe_only.csv). LEfSe always
 # writes one row: with feature NA it means LEfSe flagged nothing or did not run
 # (its note says which), so NA is never counted as a feature.
 # A method that failed is NA (unknown), never 0: on the cluster ALDEx2 failed
 # inside the engine and the old script counted it as 0 (V-E7b, D55).
-ve7b_engine_count <- function(id, ag, ds) {
-  if (nzchar(ve7b_engine_failure(id, ag, ds))) return(NA_integer_)
+#
+# Where the rows come from (the scoring rule of PREREGISTRATION section 9, "V-E7(c) scorer"):
+# a method that is the engine's DEFAULT for the comparison has its rows in the default
+# table (03_results/Q4_differential/results.csv, argument `df`), not in the table of the
+# alternatives (04_agreement/Q4.csv, `ag`). Count from `df` when the method is in it;
+# otherwise from `ag`. A method in both is counted from `df`. `df` is optional (NULL keeps
+# the old behaviour, reading `ag` only).
+ve7b_count_source <- function(id, ag, ds, df = NULL) {
+  if (id == "D19") return("describe_only")
+  if (!is.null(df) && any(df$method_id == id, na.rm = TRUE)) return("default")
+  "alternatives"
+}
+ve7b_engine_count <- function(id, ag, ds, df = NULL) {
+  if (nzchar(ve7b_engine_failure(id, ag, ds, df))) return(NA_integer_)
   if (id == "D19") return(length(unique(stats::na.omit(ds$feature[ds$method_id == "D19"]))))
-  x <- ag[ag$method_id == id & is.finite(ag$p), , drop = FALSE]
+  tab <- if (identical(ve7b_count_source(id, ag, ds, df), "default")) df else ag
+  x <- tab[tab$method_id == id & is.finite(tab$p), , drop = FALSE]
   sum(stats::p.adjust(x$p, "BH") < 0.05)
 }
 
 # Why the engine has no count for a method ("" when it has one): its table is
 # missing, LEfSe did not run, or the method failed to fit (the engine's note,
 # which carries the method's own error message since D55).
-ve7b_engine_failure <- function(id, ag, ds) {
-  tab <- if (id == "D19") ds else ag
+ve7b_engine_failure <- function(id, ag, ds, df = NULL) {
+  tab <- if (id == "D19") ds else if (identical(ve7b_count_source(id, ag, ds, df), "default")) df else ag
   if (is.null(tab)) return(sprintf("no %s table from the engine", if (id == "D19") "Q4_describe_only.csv" else "Q4.csv"))
   x <- tab[tab$method_id == id, , drop = FALSE]
   if (!nrow(x)) return("the method has no rows in the engine's table")
