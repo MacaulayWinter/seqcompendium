@@ -51,7 +51,7 @@ calibrate_unit <- function(u, layer, ids, unit_index) {
     feats <- prevalent(sim$ud$m, sim$ud$g)
     for (id in ids) {
       if (id == "D01" && is.null(sim$ud$den)) next
-      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](sim$ud, feats))), error = function(e) NULL)
+      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](sim$ud, fit_features(id, sim$ud$m, sim$ud$g, feats)))), error = function(e) NULL)
       if (is.null(res)) { rows[[length(rows) + 1]] <- data.frame(method_id = id, rep = r, seed = seed, planted = planted, calls = NA, false_calls = NA, true_calls = NA, n_planted = length(sim$truth), fit = "failed"); next }
       ok <- is.finite(res$p); qq <- rep(NA_real_, nrow(res)); qq[ok] <- stats::p.adjust(res$p[ok], "BH")
       call <- res$feature[!is.na(qq) & qq <= rule("R-FDR")]
@@ -80,7 +80,7 @@ mde_unit <- function(sim, id, unit_index) {
     vals <- vapply(seq_len(max(1, simrep() %/% 2)), function(r) {
       x <- simulate_unit(sim$fit, sim$base, sim$libs, sim$ratio, sim$n1, sim$n2, TRUE, seed = seed_for(9000) + 1000L * unit_index + 100L * j + r, fc = MDE_FC[j])
       feats <- prevalent(x$ud$m, x$ud$g); tr <- intersect(x$truth, feats); if (!length(tr)) return(NA_real_)
-      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](x$ud, feats))), error = function(e) NULL); if (is.null(res)) return(NA_real_)
+      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](x$ud, fit_features(id, x$ud$m, x$ud$g, feats)))), error = function(e) NULL); if (is.null(res)) return(NA_real_)
       ok <- is.finite(res$p); qq <- rep(NA_real_, nrow(res)); qq[ok] <- stats::p.adjust(res$p[ok], "BH")
       mean(tr %in% res$feature[!is.na(qq) & qq <= rule("R-FDR")])
     }, 1)
@@ -140,8 +140,8 @@ mock_check <- function(layers, des, manifest_dir, ids) {
     ud <- list(m = round(m[o, , drop = FALSE]), g = g[o], den = NULL, lib = rowSums(m[o, , drop = FALSE]), samples = rownames(m)[o])
     feats <- prevalent(ud$m, ud$g)
     tst[[nm]] <- do.call(rbind, lapply(setdiff(ids, "D01"), function(id) {
-      r <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](ud, feats))), error = function(e) NULL)
-      if (is.null(r)) return(data.frame(layer = nm, method_id = id, calls = NA, result = "the method failed to fit"))
+      r <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](ud, feats))), error = function(e) conditionMessage(e))
+      if (is.character(r)) return(data.frame(layer = nm, method_id = id, calls = NA, result = fit_failed_note(r)))
       ok <- is.finite(r$p); qq <- rep(NA_real_, nrow(r)); qq[ok] <- stats::p.adjust(r$p[ok], "BH")
       k <- sum(!is.na(qq) & qq <= rule("R-FDR"))
       data.frame(layer = nm, method_id = id, calls = k, result = if (k > 0) "fails: reported differences between mock replicates" else "passes")
@@ -180,7 +180,7 @@ run_override <- function(units, layers, choices, considered, des, bundle_dir) {
                       default_fdr = x$summary$fdr[x$summary$method_id == ch$final_id], limit = rule("R-CAL") * rule("R-FDR"),
                       datasets = simrep(), caveat = d$caveat, mde_log2 = md$mde, mde_note = md$note)
   }
-  bind <- function(l) { l <- Filter(Negate(is.null), l); if (length(l)) do.call(rbind, l) else NULL }
+  bind <- bind_rows
   list(decisions = bind(dec), calibration = bind(cal), per_rep = bind(reps), mock = mk)
 }
 

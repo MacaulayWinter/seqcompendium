@@ -1,0 +1,3 @@
+"dataset","method","samples","features","engine_quick","paper","equal","method_failed","method_note","in_q4_agreement_set","seconds","engine_commit_note"
+"ArcticFreshwaters","Wilcoxon (CLR)",934,1069,958,255,FALSE,FALSE,"",TRUE,2,"interim count (D56): the full engine run on the cluster is final"
+"ArcticFreshwaters","LEfSe",934,1069,710,239,FALSE,FALSE,"",TRUE,28,"interim count (D56): the full engine run on the cluster is final"

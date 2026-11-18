@@ -1,0 +1,67 @@
+2026-11-13 10:06:37 runner pid 11253 started; source 9c71cd5 (engine 55013ec)
+=== ve1 2026-11-13 10:06:37 (disk 18 GB free, memory free 70%, battery 100 discharging)
+10:06:43 V-E1 s001 V-E1 shotgun1 two_group n=10 started 
+11:56:25 V-E1 s001 V-E1 shotgun1 two_group n=10 done in 6581 s; error: NA ; profile_ok: TRUE 
+11:56:28 V-E1 s002 V-E1 shotgun1 blocks n=10 started 
+15:59:24 V-E1 s002 V-E1 shotgun1 blocks n=10 done in 14575 s; error: NA ; profile_ok: TRUE 
+15:59:25 V-E1 s003 V-E1 shotgun1 paired n=10 started 
+16:14:23 V-E1 s003 V-E1 shotgun1 paired n=10 done in 897 s; error: NA ; profile_ok: TRUE 
+16:14:24 V-E1 s004 V-E1 shotgun1 paired_blocks n=10 started 
+17:07:57 V-E1 s004 V-E1 shotgun1 paired_blocks n=10 done in 3212 s; error: NA ; profile_ok: TRUE 
+17:07:59 V-E1 s005 V-E1 shotgun1 longitudinal n=10 started 
+18:34:12 V-E1 s005 V-E1 shotgun1 longitudinal n=10 done in 5171 s; error: NA ; profile_ok: TRUE 
+18:34:13 V-E1 s006 V-E1 shotgun1 longitudinal_blocks n=10 started 
+21:29:33 V-E1 s006 V-E1 shotgun1 longitudinal_blocks n=10 done in 10517 s; error: NA ; profile_ok: TRUE 
+=== ve1 exit 0 2026-11-13 21:29:34
+=== collect 2026-11-13 21:29:34 (disk 18 GB free, memory free 55%, battery 100 charged)
+5 rows, 5 pass, 0 fail -> /work/mac_marks_fixed/collect_marks.csv
+=== collect exit 0 2026-11-13 21:29:37
+=== ctl 2026-11-13 21:29:37 (disk 18 GB free, memory free 55%, battery 100 charged)
+21:29:41 ctl 1 unknown stopped: TRUE 
+21:29:41 ctl 1 typo stopped: TRUE 
+21:29:41 ctl 2 unknown stopped: TRUE 
+21:29:41 ctl 2 typo stopped: TRUE 
+21:29:41 ctl 3 unknown stopped: TRUE 
+21:29:41 ctl 3 typo stopped: TRUE 
+21:29:41 ctl 4 unknown stopped: TRUE 
+21:29:41 ctl 4 typo stopped: TRUE 
+21:29:41 ctl 5 unknown stopped: TRUE 
+21:29:42 ctl 5 typo stopped: TRUE 
+21:29:42 ctl 6 unknown stopped: TRUE 
+21:29:42 ctl 6 typo stopped: TRUE 
+=== ctl exit 0 2026-11-13 21:29:42
+=== noctl 2026-11-13 21:29:42 (disk 18 GB free, memory free 55%, battery 100 charged)
+21:29:47 noctl s001 V-E1 shotgun1 two_group n=10 started 
+22:57:25 noctl s001 V-E1 shotgun1 two_group n=10 done; warning: TRUE 
+22:57:27 noctl s002 V-E1 shotgun1 blocks n=10 started 
+01:30:39 noctl s002 V-E1 shotgun1 blocks n=10 done; warning: TRUE 
+01:30:40 noctl s003 V-E1 shotgun1 paired n=10 started 
+01:45:29 noctl s003 V-E1 shotgun1 paired n=10 done; warning: TRUE 
+01:45:30 noctl s004 V-E1 shotgun1 paired_blocks n=10 started 
+02:19:53 noctl s004 V-E1 shotgun1 paired_blocks n=10 done; warning: TRUE 
+02:19:55 noctl s005 V-E1 shotgun1 longitudinal n=10 started 
+03:42:37 noctl s005 V-E1 shotgun1 longitudinal n=10 done; warning: TRUE 
+03:42:38 noctl s006 V-E1 shotgun1 longitudinal_blocks n=10 started 
+06:41:28 noctl s006 V-E1 shotgun1 longitudinal_blocks n=10 done; warning: TRUE 
+=== noctl exit 0 2026-11-14 06:41:28
+=== marks 2026-11-14 06:41:29 (disk 19 GB free, memory free 52%, battery 100 charged)
+  mark
+ V-E2b
+ V-E2b
+ V-E2b
+ V-E2b
+ V-E10
+                                                                                  scenario
+                                  (1) V-E1 bundles: no control sample in any Q1-Q11 result
+ (2) a control value changed to an unknown value or a typo: the run stops naming the value
+                                           (3) V-E1 bundles: every control in controls.csv
+                     (4) V-E1 bundles without controls: the no-controls warning is written
+                 main toy and the first 4 V-E1 bundles run twice: every CSV byte-identical
+ number pass
+      1 TRUE
+      1 TRUE
+      1 TRUE
+      1 TRUE
+      1 TRUE
+=== marks exit 0 2026-11-14 06:41:33
+2026-11-14 06:41:33 FIXED MARKS DONE

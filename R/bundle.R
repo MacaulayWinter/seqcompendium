@@ -96,6 +96,18 @@ check_layers <- function(layers, md) {
     if (length(absent)) notes[[length(notes) + 1]] <- data.frame(check = sprintf("layer %s", nm), status = "note",
       message = sprintf("%d sample(s) in the metadata have no data in layer `%s` and are left out of it: %s.", length(absent), nm, paste(absent, collapse = ", ")))
     layers[[nm]]$data$value <- x
+    # A sample whose values in a count or proportion layer are all zero holds no
+    # composition: library sizes, offsets and log-ratios are undefined for it, so it
+    # is left out of that layer and listed, like a sample with no data (D49).
+    if (unit %in% c("count", "proportion") && !length(stops)) {
+      tot <- tapply(x, d$sample, sum)
+      empty <- names(tot)[!is.na(tot) & tot == 0]
+      if (length(empty)) {
+        layers[[nm]]$data <- layers[[nm]]$data[!layers[[nm]]$data$sample %in% empty, , drop = FALSE]
+        notes[[length(notes) + 1]] <- data.frame(check = sprintf("layer %s", nm), status = "note",
+          message = sprintf("%d sample(s) have a total of 0 in layer `%s` and are left out of it (nothing can be estimated from an empty sample): %s.", length(empty), nm, paste(empty, collapse = ", ")))
+      }
+    }
   }
   list(layers = layers, stops = stops, notes = if (length(notes)) do.call(rbind, notes) else NULL)
 }

@@ -134,6 +134,15 @@ q4_unit <- function(u, layer, default_id, des = NULL) {
     return(list(skip = "a denominator is missing or zero for a sample in this comparison"))
   feats <- prevalent(ud$m, ud$g)
   if (length(feats) < 2) return(list(skip = "fewer than 2 features pass the prevalence rule (R-PREV)"))
+  # A count model has no finite estimate for a feature with no counts in one
+  # group: the fit stops wherever the optimiser does, and that number differs
+  # between machines. Such a feature is not fitted; its row says why (D51).
+  all_feats <- feats; sep <- character(0)
+  if (default_id == "D01") {
+    sep <- not_estimable(ud$m[, feats, drop = FALSE], ud$g)
+    feats <- setdiff(feats, names(sep))
+    if (length(feats) < 2) return(list(skip = "fewer than 2 features have counts in both groups (a count model cannot estimate the rest)"))
+  }
   base <- tryCatch(FITS[[default_id]](ud, feats), error = function(e) NULL)
   if (is.null(base)) return(list(skip = sprintf("the default method (%s) failed to fit", default_id)))
   count_model <- default_id == "D01"
@@ -193,7 +202,9 @@ q4_unit <- function(u, layer, default_id, des = NULL) {
                         method_role = if (rung == 0) "default" else sprintf("fallback rung %d", rung), caveat = paste(cav, collapse = "; "))
     }
   }
-  res <- do.call(rbind, res)
+  for (f in names(sep)) res[[f]] <- data.frame(feature = f, effect = NA_real_, se = NA_real_, stat = NA_real_, p = NA_real_, effect_unit = "none (not estimable)", rung = 0L,
+                                                method_role = "not estimable", caveat = sep[[f]])
+  res <- do.call(rbind, res[intersect(all_feats, names(res))])
   ok <- is.finite(res$p)
   res$ci_low <- res$effect - 1.96 * res$se; res$ci_high <- res$effect + 1.96 * res$se
   res$q <- NA_real_; res$q[ok] <- stats::p.adjust(res$p[ok], "BH")
@@ -203,7 +214,32 @@ q4_unit <- function(u, layer, default_id, des = NULL) {
   # D24: what the result was adjusted for; methods that cannot adjust say so.
   res$adjusted_for <- ifelse(res$method_id %in% c("D17", "K01", "K04"), "not adjusted (this method cannot adjust for covariates)", ud$adjusted_for)
   res$share_expected_by_chance <- chance; res$excess_failures_p <- excess_p
-  list(results = res, checks = chk, share_failed = share, whole = whole, feats = feats, ud = ud)
+  list(results = res, checks = chk, share_failed = share, whole = whole, feats = all_feats, ud = ud)
+}
+
+# The features a method is fitted to: for the count model (D01), without those it
+# cannot estimate (D51), so simulations measure what the engine does.
+fit_features <- function(id, m, g, feats) if (identical(id, "D01")) setdiff(feats, names(not_estimable(m[, feats, drop = FALSE], g))) else feats
+
+# Features a count model cannot estimate: those with no counts at all in some
+# group (or group x timepoint cell). Returns a named character vector of
+# reasons, one per such feature (D51).
+not_estimable <- function(m, cell) {
+  cell <- droplevels(as.factor(cell))
+  out <- character(0)
+  for (f in colnames(m)) {
+    tot <- tapply(m[, f], cell, sum)
+    empty <- names(tot)[!is.na(tot) & tot == 0]
+    if (length(empty)) out[[f]] <- sprintf("not estimable: no counts in %s, so a count model has no finite fold change; see the presence question (Q5)", paste(empty, collapse = ", "))
+  }
+  out
+}
+
+# The note for a method that stopped: what it said, on one line, kept short.
+fit_failed_note <- function(msg) {
+  msg <- gsub("[[:space:]]+", " ", trimws(paste(msg, collapse = " ")))
+  if (nchar(msg) > 300) msg <- paste0(substr(msg, 1, 297), "...")
+  sprintf("the method failed to fit: %s", if (nzchar(msg)) msg else "no error message")
 }
 
 # Agreement and describe-only methods for one unit. Each method's own BH
@@ -211,8 +247,9 @@ q4_unit <- function(u, layer, default_id, des = NULL) {
 q4_agreement <- function(ud, feats, ids) {
   out <- list()
   for (id in ids) {
-    r <- tryCatch(FITS[[id]](ud, feats), error = function(e) NULL)
-    if (is.null(r)) { out[[id]] <- data.frame(feature = feats, method_id = id, effect = NA, p = NA, q = NA, call = NA, note = "the method failed to fit"); next }
+    # A method that stops keeps its own error message in the note (V-E7b, D55).
+    r <- tryCatch(FITS[[id]](ud, feats), error = function(e) conditionMessage(e))
+    if (is.character(r)) { out[[id]] <- data.frame(feature = feats, method_id = id, effect = NA, p = NA, q = NA, call = NA, note = fit_failed_note(r)); next }
     ok <- is.finite(r$p); qq <- rep(NA_real_, nrow(r)); qq[ok] <- stats::p.adjust(r$p[ok], "BH")
     out[[id]] <- data.frame(feature = r$feature, method_id = id, effect = r$effect, p = r$p, q = qq, call = !is.na(qq) & qq <= rule("R-FDR"), note = "")
   }
@@ -220,7 +257,10 @@ q4_agreement <- function(ud, feats, ids) {
 }
 
 describe_lefse <- function(ud, feats) {
-  rel <- t(ud$m[, feats, drop = FALSE] / pmax(rowSums(ud$m), 1))
+  # Relative abundance per million (lefser's own relativeAb() scale), not 0-1:
+  # on a 0-1 scale the within-group variances of rare features are so small that
+  # MASS::lda calls them "constant within groups" and LEfSe stops (V-E7b, D55).
+  rel <- t(ud$m[, feats, drop = FALSE] / pmax(rowSums(ud$m), 1) * 1e6)
   se <- SummarizedExperiment::SummarizedExperiment(assays = list(rel = rel), colData = S4Vectors::DataFrame(g = ud$g, row.names = ud$samples))
   set.seed(seed_for(44))
   r <- tryCatch(suppressMessages(suppressWarnings(lefser::lefser(se, classCol = "g", assay = "rel"))), error = function(e) conditionMessage(e))
@@ -256,7 +296,7 @@ q4_abundance <- function(units, layers, choices, decisions = NULL, des = NULL) {
     z <- with(x$results, sign(effect) * stats::qnorm(pmax(p, 1e-300) / 2, lower.tail = FALSE))
     stats_for_q7[[i]] <- list(unit = u, stat = stats::setNames(z, x$results$feature)[is.finite(z)], ud = x$ud, feats = x$feats)
   }
-  bind <- function(l) { l <- Filter(Negate(is.null), l); if (length(l)) do.call(rbind, l) else NULL }
+  bind <- bind_rows
   list(results = bind(res), checks = bind(chk), agreement = bind(agr), describe = bind(desc), skipped = bind(notes),
        for_q7 = Filter(Negate(is.null), stats_for_q7))
 }

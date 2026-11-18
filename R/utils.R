@@ -40,9 +40,11 @@ write_csv <- function(x, path) {
   invisible(path)
 }
 
+.rules_cache <- new.env(parent = emptyenv())
 rules <- function() {
-  r <- yaml::read_yaml(system.file("rules", "rules.yaml", package = "seqcompendium"))
-  r
+  # Read once per session: the profile of one run spent ~3% of its time re-reading this file.
+  if (is.null(.rules_cache$r)) .rules_cache$r <- yaml::read_yaml(system.file("rules", "rules.yaml", package = "seqcompendium"))
+  .rules_cache$r
 }
 rule <- function(id) rules()$rules[[id]]$value
 

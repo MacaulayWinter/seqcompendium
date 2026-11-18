@@ -1,0 +1,4 @@
+"dataset","paper_label","method","samples","features","engine","paper","equal","seconds","error","differences"
+"ArcticFireSoils","Soil - Fires","ALDEx2",147,3656,0,525,FALSE,146367,NA,"paper: R 4.0-era package versions, its own pre-processing scripts; engine: Bioconductor 3.23 versions, ALDEx2 and CLR as the engine runs them (pseudocount R-PSEUDO = 0.5), both groups' samples only"
+"ArcticFireSoils","Soil - Fires","Wilcoxon (CLR)",147,3656,2252,2101,FALSE,146367,NA,"paper: R 4.0-era package versions, its own pre-processing scripts; engine: Bioconductor 3.23 versions, ALDEx2 and CLR as the engine runs them (pseudocount R-PSEUDO = 0.5), both groups' samples only"
+"ArcticFireSoils","Soil - Fires","LEfSe",147,3656,1,1978,FALSE,146367,NA,"paper: R 4.0-era package versions, its own pre-processing scripts; engine: Bioconductor 3.23 versions, ALDEx2 and CLR as the engine runs them (pseudocount R-PSEUDO = 0.5), both groups' samples only"

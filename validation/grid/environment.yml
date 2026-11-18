@@ -1,0 +1,37 @@
+# conda environment for the v0.1.0 validation grid, on any machine (CLAUDE.md D34h, D39).
+# Shared machines may lack a container runtime or preload other versions. R and the system libraries
+# come from conda-forge; every R package from renv.lock, built from source.
+# No pandoc: the grid scores CSVs only, so the HTML report is skipped.
+name: seqcompendium-validation
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - r-base=4.6.1=*_1   # build 1 (2026-06-29): h502d0c9_1 on linux-64 (most clusters), h269e6ae_1 on linux-aarch64 (the rehearsal)
+  - compilers
+  - make
+  - cmake
+  - pkg-config
+  - gsl
+  - glpk
+  - gmp
+  - mpfr
+  - libxml2
+  - libcurl
+  - openssl
+  - zlib
+  - fontconfig
+  - harfbuzz
+  - fribidi
+  - freetype
+  - libpng
+  - libtiff
+  - libjpeg-turbo
+  - icu
+  # Development files that conda-forge now ships as separate packages (D45): the unversioned
+  # liblzma.so and libxml2.so links, expat.pc (fontconfig.pc requires it, or pkg-config returns
+  # nothing for fontconfig), and the X11 protocol .pc files the xcb/xrender .pc files require.
+  - liblzma-devel
+  - libxml2-devel
+  - expat
+  - xorg-xorgproto

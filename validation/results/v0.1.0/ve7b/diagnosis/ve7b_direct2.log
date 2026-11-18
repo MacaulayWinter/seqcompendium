@@ -1,0 +1,5 @@
+19:22:15 agreement set for this layer | NA | D06 D04 D17 
+19:22:15 covariates in the unit (NULL = none) | NA | none 
+Warning message:
+replacing previous import ‘S4Arrays::makeNindexFromArrayViewport’ by ‘DelayedArray::makeNindexFromArrayViewport’ when loading ‘SummarizedExperiment’ 
+19:23:39 ALDEx2 via FITS$D04: BH(we.ep) < 0.05 | 288 | 84 s, R peak 5629 MB 

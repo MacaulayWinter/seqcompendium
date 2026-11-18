@@ -1,0 +1,11 @@
+queue pid 67632 armed 2026-11-14 17:31:28; source ff4c310; waiting for the Mac to be free (no container)
+2026-11-14 17:32:29 Mac free: starting
+=== ArcticFireSoils aldex 2026-11-14 17:32:29 (disk 29 GB free, memory free 42%, cap 8g)
+2026-11-14 17:32:34 ArcticFireSoils aldex : writing the bundle 
+2026-11-14 17:32:40 147 samples (Control 48, Fire 99), 3656 prevalent features; Q4 agreement set: D06 D04 D17 
+Warning message:
+replacing previous import ‘S4Arrays::makeNindexFromArrayViewport’ by ‘DelayedArray::makeNindexFromArrayViewport’ when loading ‘SummarizedExperiment’ 
+2026-11-14 17:34:34 ALDEx2 :  288  (paper  525 )  
+2026-11-14 17:34:34 wrote /work/ve7b_quick/ve7b_quick_ArcticFireSoils_aldex.csv ; ALDEx2 1.44.0 ; lefser 1.22.0 
+=== ArcticFireSoils aldex exit 0 2026-11-14 17:34:35
+V-E7b QUICK DONE 2026-11-14 17:34:35

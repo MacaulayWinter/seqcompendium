@@ -3,7 +3,7 @@
 # approved on 2026-10-29. Changing one is a new engine version, logged in
 # CLAUDE.md. These rules decide whether a METHOD suits the data; they never
 # decide what a metadata column is (that comes only from the column guide).
-rules_version: "2026-10-30.1"
+rules_version: "2026-11-06.1"
 rules:
   R-PREV:   {value: 0.10, reason: "Feature kept for per-feature tests if present in at least this share of samples in at least one group", source: "rule of thumb, unverified"}
   R-MINGRP: {value: 3,    reason: "Smallest group size for any test; below it, description and effect sizes only", source: "rule of thumb, unverified"}
@@ -30,3 +30,5 @@ rules:
   R-CHANCEREP: {value: 20, reason: "Clean data sets simulated per comparison to measure how often its residual checks fail by chance (CLAUDE.md D21)", source: "engine convention"}
   R-SPP:    {value: 5,    reason: "Fewest samples per fixed-effect parameter before adjustment terms are dropped (batch only, then none; CLAUDE.md D24)", source: "rule of thumb, unverified"}
   R-CHANCEFEAT: {value: 50, reason: "Most features simulated when measuring the mixed model checks' chance failure rate (a mixed model per feature is slow; CLAUDE.md D26)", source: "engine convention"}
+  # Added at E7 (CLAUDE.md D42, user decision 2026-11-06).
+  R-DIVNETMAX: {value: 2000, reason: "Most features for DivNet (Q2 agreement set, A04): its feature x feature matrices need about 8 x features^2 bytes each, so a 10,906-feature 16S table ran out of 6 GB; above this DivNet is not run and the result says so", source: "rule of thumb, unverified"}
