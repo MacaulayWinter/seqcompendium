@@ -105,10 +105,12 @@ test_that("E3-M9: zero-inflated features are flagged and refitted; over R-DIAG m
   expect_true(all(grepl("may have moved by chance|clearly more than chance", moved$caveat)))
   y <- res_csv(run_fixture("zeroinfl_many"), "03_results/Q4_differential/results.csv")
   # Since D17 the whole comparison moves when failures clearly exceed chance.
+  # Rows of features that were not fitted (D51: no counts in a cell) take no part in the checks.
+  y <- y[y$method_role != "not estimable", ]
   w <- y[y$excess_failures_p < 0.05, ]
   expect_true(nrow(w) > 0 && all(w$whole_question_moved & w$rung >= 1 & grepl("whole question moved", w$caveat)))
   expect_true(all(!y$whole_question_moved[y$excess_failures_p >= 0.05]))
-  expect_true(all(y$status != "not_testable" | grepl("listed, not dropped", y$caveat)))
+  expect_true(all(y$status != "not_testable" | grepl("listed, not dropped|not estimable", y$caveat)))
 })
 
 test_that("E3-M10: leads carry method, role, agreement; tier 2 needs q <= R-FDR; no tier 1", {

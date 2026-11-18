@@ -1,0 +1,34 @@
+runner pid 1313 started 2026-11-12 05:43:35; engine b3418c9
+2026-11-12 12:44:37 runner pid 1313 stopped while waiting on PAUSE (nothing had run): disk rule changed and the engine fixes (D55) will be merged first; restarted later
+runner pid 13905 started 2026-11-12 13:31:43; engine 55013ec
+=== ve10run /work/templates /work/mac_marks c 2026-11-12 13:38:43 (disk 28 GB free)
+13:38:47 ve10run c toy 
+13:40:05 ve10run c 1 
+15:06:46 ve10run c 2 
+22:37:12 ve10run c 3 
+22:52:00 ve10run c 4 
+23:26:21 ve10run c done 
+=== ve10run exit 0 2026-11-12 23:26:23
+=== ve10run /work/templates /work/mac_marks d 2026-11-12 23:26:23 (disk 28 GB free)
+23:26:26 ve10run d toy 
+23:27:40 ve10run d 1 
+00:21:34 ve10run d 2 
+02:07:39 ve10run d 3 
+02:22:23 ve10run d 4 
+02:56:38 ve10run d done 
+=== ve10run exit 0 2026-11-13 02:56:39
+=== ve10cmp /work/templates /work/mac_marks c d 2026-11-13 02:56:39 (disk 26 GB free)
+                                 bundle files same_file_set files_differing
+1                              main toy    32          TRUE               0
+2     s001 V-E1 shotgun1 two_group n=10    27          TRUE               0
+3        s002 V-E1 shotgun1 blocks n=10    27          TRUE               0
+4        s003 V-E1 shotgun1 paired n=10    14          TRUE               0
+5 s004 V-E1 shotgun1 paired_blocks n=10    14          TRUE               0
+  differing
+1          
+2          
+3          
+4          
+5          
+02:56:44 V-E10 confirmation: 5 of 5 identical 
+=== ve10cmp exit 0 2026-11-13 02:56:44

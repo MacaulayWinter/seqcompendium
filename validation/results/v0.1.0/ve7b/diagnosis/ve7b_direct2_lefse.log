@@ -1,0 +1,10 @@
+19:25:38 agreement set for this layer | NA | D06 D04 D17 
+19:25:38 covariates in the unit (NULL = none) | NA | none 
+19:25:38 features constant (zero variance) within at least one group | 534 | of 3656 
+19:26:02 LEfSe as the engine calls it | NA | error: variables    1    2    3    5    6    7    8   10   11   12   13   14   15   17   19   20   22   24   28   30   31   32   33   34   35   36   40   41   42   43   44   45   49   51   57   60   6 
+19:26:22 LEfSe, relative abundance scaled to 1e6 (as Python LEfSe does) | 436 |  
+19:26:33 LEfSe, features constant within a group dropped before LEfSe | NA | error: variables    1    2    3    4    5    6    7    8    9   10   12   13   15   20   22   25   26   27   28   30   37   40   41   45   48   50   51   52   53   54   57   58   60   61   62   63   6 
+19:26:45 LEfSe, dropped + scaled to 1e6 | 369 |  
+Warning message:
+replacing previous import ‘S4Arrays::makeNindexFromArrayViewport’ by ‘DelayedArray::makeNindexFromArrayViewport’ when loading ‘SummarizedExperiment’ 
+19:26:45 wrote /work/ve7b_direct/ve7b_direct2_ArcticFireSoils_lefse.csv ; lefser 1.22.0 ; ALDEx2 1.44.0 

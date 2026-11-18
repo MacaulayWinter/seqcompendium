@@ -14,6 +14,7 @@ contrast_units <- function(layers, des, cells) {
       next
     }
     ce <- merge(cells, st[, c("sample", p, if (!is.na(des$subject)) des$subject), drop = FALSE], by = "sample")
+    ce <- ce[ce$sample %in% layers[[nm]]$data$sample, , drop = FALSE]   # only samples with data in this layer (D49)
     for (cell in unique(paste(ce$timepoint, ce$block, sep = "\r"))) {
       tb <- strsplit(cell, "\r", fixed = TRUE)[[1]]
       d <- ce[ce$timepoint == tb[1] & ce$block == tb[2] & !is.na(ce[[p]]), , drop = FALSE]
@@ -61,6 +62,14 @@ unit_key <- function(u) data.frame(layer = u$layer, predictor = u$predictor, con
 clr <- function(m) { l <- log(m + rule("R-PSEUDO")); l - rowMeans(l) }
 
 seed_for <- function(offset) rule("R-SEED") + offset
+
+# Packages a method loads on its first call, after the engine has set its seed.
+# snow draws random numbers when it loads, so the first call in an R session
+# would follow a different random stream from every later one (V-E10).
+# DivNet's MCmat asks for doParallel, foreach and doSNOW even with ncores = 1
+# (it uses `&`, which does not short-circuit). They are loaded before the seed.
+load_before_seed <- function(pkgs) for (p in pkgs) suppressMessages(requireNamespace(p, quietly = TRUE))
+DIVNET_LOADS <- c("doParallel", "foreach", "doSNOW", "snow")
 
 # The per-sample offset: the denominator when the layer has one, else library
 # size. (Not `%||%`, which keeps only the first element.)

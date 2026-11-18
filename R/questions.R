@@ -1,7 +1,13 @@
 # questions.R: Q0, Q3, Q5 and Q7 (design sections 5.2 and 6), and the Q2
 # agreement set. S1 counts, each timepoint and block on its own.
 
-bind_rows <- function(l) { l <- Filter(Negate(is.null), l); if (length(l)) do.call(rbind, l) else NULL }
+# Row-binds tables that may differ in columns (one comparison can take a
+# fallback with extra columns); a missing column is NA (CLAUDE.md D38).
+bind_rows <- function(l) {
+  l <- Filter(Negate(is.null), l); if (!length(l)) return(NULL)
+  cols <- unique(unlist(lapply(l, names)))
+  do.call(rbind, lapply(l, function(x) { for (k in setdiff(cols, names(x))) x[[k]] <- NA; x[cols] }))
+}
 
 # Q0: which features look like contaminants? decontam's prevalence method,
 # negative controls (F8) against study samples. Flagged features are never
@@ -178,7 +184,9 @@ q2_agreement <- function(units, layers, des = NULL) {
       out[[length(out) + 1]] <- cbind(key, q_order = qq, method_id = "A01", effect = mean(h[!a, qq + 1]) - mean(h[a, qq + 1]),
                                       p = if (is.null(t)) NA else t$p.value, note = "plug-in on rarefied counts, Welch test")
     }
-    dv <- tryCatch({
+    dv_skip <- if (ncol(m) > rule("R-DIVNETMAX")) sprintf("DivNet not run: %d features, more than %d (rule R-DIVNETMAX; its memory grows with features squared)", ncol(m), rule("R-DIVNETMAX")) else NULL
+    dv <- if (!is.null(dv_skip)) NULL else tryCatch({
+      load_before_seed(DIVNET_LOADS)
       set.seed(seed_for(22))
       X <- stats::model.matrix(~ g)
       utils::capture.output(x <- suppressMessages(suppressWarnings(DivNet::divnet(W = m, X = X, tuning = "fast", ncores = 1))))
@@ -189,7 +197,7 @@ q2_agreement <- function(units, layers, des = NULL) {
     }, error = function(e) NULL)
     for (j in 1:2) out[[length(out) + 1]] <- cbind(key, q_order = j, method_id = "A04",
                                                    effect = if (is.null(dv)) NA else dv[[j]][["effect"]], p = if (is.null(dv)) NA else dv[[j]][["p"]],
-                                                   note = if (is.null(dv)) "DivNet did not fit" else if (j == 1) "DivNet Shannon, betta test" else "DivNet Simpson (sign flipped), betta test")
+                                                   note = if (!is.null(dv_skip)) dv_skip else if (is.null(dv)) "DivNet did not fit" else if (j == 1) "DivNet Shannon, betta test" else "DivNet Simpson (sign flipped), betta test")
   }
   r <- bind_rows(out)
   if (is.null(r)) return(NULL)
