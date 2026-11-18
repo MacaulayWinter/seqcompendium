@@ -29,3 +29,8 @@ The supplementary tables (`MOESM3`-`MOESM6`, "Additional files 3-6") are opened 
 | D19 LEfSe | none: no line |
 - Zhou's pipeline keeps features present in at least 10% of **all** samples and libraries of at least 1,000 reads (`preprocess.fun`), and for SMOKE uses a design with the covariate Sex and a subject random effect (LinDA-LMM; Left and Right sites separately); the engine's quick counts use the engine's rule (10% of one group) and a plain two-group contrast. These are known differences, written here before any number is seen. They are **not** grounds for doubt (9.2): only G4 can accept one, by reproducing the paper's step and re-running with the repeat kept.
 - Feature-level effect sizes are not in `pval.mat.list.rds`: rule 3 (Spearman) is "not applicable" for Zhou unless another deposited file carries effects. Rule 2 (sign) likewise needs effects and is not applicable without them; the report says so (9.5).
+
+## Amendment, same day, still before any value was read (only the column headers of the Wallen files had been looked at)
+Wallen's files carry their own BH columns. The reference count per method is the number of rows with the column below < 0.05:
+ALDEx2 `we.eBH` (the Welch test, the one the engine's ALDEx2 uses: `aldex.ttest`, p = `we.ep`); ANCOM-BC `FDR_BH`; KW_CLR `FDR_BH`; LEfSe `FDR_BH`.
+For LEfSe the engine's quick count is what lefser lists (its own criterion); the reference count is the file's rows at `FDR_BH` < 0.05, as 9.4 states ("features with q < 0.05"). That difference in definition is not a ground for doubt (9.2); it is reported.
