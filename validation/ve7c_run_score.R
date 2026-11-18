@@ -40,7 +40,8 @@ for (nm in c("CDI", "IBD", "RA", "SMOKE")) {
   engf <- unique(ft$feature); ov <- sapply(zl, function(m) length(intersect(rownames(m), engf)) / max(nrow(m), 1)); k <- which.max(ov)
   lines[[nm]] <- sprintf("%s: matrix %d (%d rows; %.0f%% of its rows are in the engine's feature table; others %s)", nm, k, nrow(zl[[k]]), 100 * ov[k], paste(sprintf("%.0f%%", 100 * ov[-k]), collapse = ", "))
   m <- zl[[k]]
-  for (id in names(ZC)) rows[[length(rows) + 1]] <- judge("Zhou 2022", nm, id, sum(bh(m[, ZC[[id]]]) < 0.05, na.rm = TRUE), ct, ft, NULL, note = if (id == "D09") "LinDA's authors' own reference: own line, not counted" else "")
+  zc <- if (nm == "SMOKE") c(D09 = "LinDA-LMM(Both)") else ZC
+  for (id in names(zc)) rows[[length(rows) + 1]] <- judge("Zhou 2022", nm, id, sum(bh(m[, zc[[id]]]) < 0.05, na.rm = TRUE), ct, ft, NULL, note = if (id == "D09") "LinDA's authors' own reference: own line, not counted" else "")
 }
 res <- do.call(rbind, rows); utils::write.csv(res, file.path(out, "ve7c_method_lines.csv"), row.names = FALSE); writeLines(unlist(lines), file.path(out, "ve7c_zhou_matrix_match.txt"))
 cong <- function(rn) { x <- res[res$reference == rn, ]; ve7c_reference_congruent(data.frame(method_id = x$method_id, ok = x$ok), linda_authors = rn == "Zhou 2022") }
