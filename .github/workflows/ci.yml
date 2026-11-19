@@ -46,7 +46,10 @@ jobs:
       - name: Build the pinned container
         run: docker build -t seqcompendium:ci .
       - name: Every pinned version at least 14 days old (E3-M11)
-        run: docker run --rm -v "$PWD":/src:ro -w /src seqcompendium:ci Rscript inst/scripts/check_package_ages.R renv.lock 2026-10-29
+        # The workflow's own read-only token is passed in as an environment variable (never printed) so GitHub's API does not refuse the lookup on shared runners.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: docker run --rm -e GITHUB_TOKEN -v "$PWD":/src:ro -w /src seqcompendium:ci Rscript inst/scripts/check_package_ages.R renv.lock 2026-10-29
       - name: R CMD check (no manual)
         run: |
           docker run --rm -v "$PWD":/src:ro seqcompendium:ci bash -c '
