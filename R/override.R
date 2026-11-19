@@ -31,7 +31,7 @@ simulate_unit <- function(fit, base, libs, ratio, n1, n2, planted, seed, fc = 2)
 }
 
 # Calibration of every candidate on one comparison.
-calibrate_unit <- function(u, layer, ids, unit_index) {
+calibrate_unit <- function(u, layer, ids, unit_index, cores = 1L) {
   ud <- unit_data(u, layer)
   ref <- round(ud$m[u$ref_samples, , drop = FALSE])
   if (nrow(ref) < rule("R-MINSIM"))
@@ -43,8 +43,10 @@ calibrate_unit <- function(u, layer, ids, unit_index) {
   fit <- list(midas = midas, ref = ref)
   base <- colMeans(ref / rowSums(ref)); base <- pmax(base, 1e-8); base <- base / sum(base)
   ratio <- if (is.null(ud$den)) NULL else (ud$den / ud$lib)[seq_along(u$ref_samples)]
-  R <- simrep(); rows <- list()
-  for (r in seq_len(R)) {
+  R <- simrep()
+  # One simulated data set per task; each sets its own seed (simulate_unit), so the result does not depend on the number of workers (V-E10b).
+  one_rep <- function(r) {
+    rows <- list()
     planted <- r > R / 2
     seed <- seed_for(5000) + 1000L * unit_index + r
     sim <- simulate_unit(fit, base, rowSums(ref), ratio, length(u$ref_samples), length(u$level_samples), planted, seed = seed)
@@ -59,7 +61,9 @@ calibrate_unit <- function(u, layer, ids, unit_index) {
                                              false_calls = sum(!call %in% sim$truth), true_calls = sum(call %in% sim$truth),
                                              n_planted = sum(sim$truth %in% feats), fit = "ok")
     }
+    rows
   }
+  rows <- unlist(par_map(seq_len(R), one_rep, cores, "calibration loop"), recursive = FALSE)
   per_rep <- do.call(rbind, rows)
   summ <- do.call(rbind, lapply(split(per_rep, per_rep$method_id), function(d) {
     ok <- d[d$fit == "ok", ]
@@ -75,17 +79,20 @@ calibrate_unit <- function(u, layer, ids, unit_index) {
 # extra simulated data sets per fold change; the smallest fold change found
 # with power >= 0.8, on the log2 scale.
 MDE_FC <- c(1.5, 2, 3, 4, 8)
-mde_unit <- function(sim, id, unit_index) {
-  pw <- vapply(seq_along(MDE_FC), function(j) {
-    vals <- vapply(seq_len(max(1, simrep() %/% 2)), function(r) {
-      x <- simulate_unit(sim$fit, sim$base, sim$libs, sim$ratio, sim$n1, sim$n2, TRUE, seed = seed_for(9000) + 1000L * unit_index + 100L * j + r, fc = MDE_FC[j])
-      feats <- prevalent(x$ud$m, x$ud$g); tr <- intersect(x$truth, feats); if (!length(tr)) return(NA_real_)
-      res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](x$ud, fit_features(id, x$ud$m, x$ud$g, feats)))), error = function(e) NULL); if (is.null(res)) return(NA_real_)
-      ok <- is.finite(res$p); qq <- rep(NA_real_, nrow(res)); qq[ok] <- stats::p.adjust(res$p[ok], "BH")
-      mean(tr %in% res$feature[!is.na(qq) & qq <= rule("R-FDR")])
-    }, 1)
-    mean(vals, na.rm = TRUE)
-  }, 1)
+mde_unit <- function(sim, id, unit_index, cores = 1L) {
+  nr <- max(1, simrep() %/% 2); J <- seq_along(MDE_FC)
+  # One simulated data set per task, in fold-change then replicate order; each sets its own seed (V-E10b). A task returns a one-element list so that a missing power (NA) is a result, not a gap.
+  tasks <- expand.grid(r = seq_len(nr), j = J)[, c("j", "r")]
+  one <- function(k) {
+    j <- tasks$j[k]; r <- tasks$r[k]
+    x <- simulate_unit(sim$fit, sim$base, sim$libs, sim$ratio, sim$n1, sim$n2, TRUE, seed = seed_for(9000) + 1000L * unit_index + 100L * j + r, fc = MDE_FC[j])
+    feats <- prevalent(x$ud$m, x$ud$g); tr <- intersect(x$truth, feats); if (!length(tr)) return(list(NA_real_))
+    res <- tryCatch(suppressMessages(suppressWarnings(FITS[[id]](x$ud, fit_features(id, x$ud$m, x$ud$g, feats)))), error = function(e) NULL); if (is.null(res)) return(list(NA_real_))
+    ok <- is.finite(res$p); qq <- rep(NA_real_, nrow(res)); qq[ok] <- stats::p.adjust(res$p[ok], "BH")
+    list(mean(tr %in% res$feature[!is.na(qq) & qq <= rule("R-FDR")]))
+  }
+  vals <- vapply(par_map(seq_len(nrow(tasks)), one, cores, "minimum-detectable-effect loop"), function(z) z[[1]], 1)
+  pw <- vapply(J, function(j) mean(vals[tasks$j == j], na.rm = TRUE), 1)
   hit <- which(is.finite(pw) & pw >= 0.8)
   list(mde = if (length(hit)) log2(MDE_FC[min(hit)]) else NA_real_, power = pw,
        note = if (length(hit)) sprintf("smallest fold change found with power >= 0.8 on simulated data: %s (log2 %.2f)", MDE_FC[min(hit)], log2(MDE_FC[min(hit)]))
@@ -154,7 +161,7 @@ mock_check <- function(layers, des, manifest_dir, ids) {
 
 # Runs steps 0-5 for every Q4 comparison. Returns the per-unit decision, the
 # calibration tables and the mock check.
-run_override <- function(units, layers, choices, considered, des, bundle_dir) {
+run_override <- function(units, layers, choices, considered, des, bundle_dir, cores = 1L) {
   mk <- mock_check(layers, des, bundle_dir, Q4_CANDIDATES)
   dec <- list(); cal <- list(); reps <- list()
   for (i in seq_along(units)) {
@@ -163,7 +170,7 @@ run_override <- function(units, layers, choices, considered, des, bundle_dir) {
     ch <- choices[choices$layer == u$layer & choices$question == "Q4", ]
     elig <- considered$id[considered$layer == u$layer & considered$eligible == "yes"]
     ids <- intersect(Q4_CANDIDATES, elig)
-    x <- calibrate_unit(u, L, ids, i)
+    x <- calibrate_unit(u, L, ids, i, cores)
     key <- unit_key(u)
     if (!is.null(x$skipped)) {
       dec[[i]] <- cbind(key, default_id = ch$final_id, final_id = ch$final_id, decision = x$skipped, n_reference = x$n_ref,
@@ -175,7 +182,7 @@ run_override <- function(units, layers, choices, considered, des, bundle_dir) {
     d <- decide_override(x$summary, ch$final_id, mk$failed)
     cal[[i]] <- cbind(key, n_reference = x$n_ref, x$summary)
     reps[[i]] <- cbind(key, x$per_rep)
-    md <- if (d$final %in% names(FITS)) mde_unit(x$sim, d$final, i) else list(mde = NA_real_, note = "not available: no simulation for this method")
+    md <- if (d$final %in% names(FITS)) mde_unit(x$sim, d$final, i, cores) else list(mde = NA_real_, note = "not available: no simulation for this method")
     dec[[i]] <- cbind(key, default_id = ch$final_id, final_id = d$final, decision = d$decision, n_reference = x$n_ref,
                       default_fdr = x$summary$fdr[x$summary$method_id == ch$final_id], limit = rule("R-CAL") * rule("R-FDR"),
                       datasets = simrep(), caveat = d$caveat, mde_log2 = md$mde, mde_note = md$note)

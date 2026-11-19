@@ -7,10 +7,14 @@
 #'   or be empty, unless `overwrite = TRUE`, which replaces only a folder this
 #'   engine wrote before.
 #' @param overwrite replace an earlier compendium in `out`.
+#' @param cores how many cores the override check's simulated data sets may use (default 1, one after another).
+#'   More cores change only the time, never a number: the engine sizes the workers from the memory a simulated data set needs and says what it chose in
+#'   `provenance/run_settings.yaml`. Forked workers need Linux or macOS (including Docker and WSL2).
 #' @return the leads table, invisibly. Stops with a classed condition
 #'   (`seqcompendium_stop`) naming every problem the user must fix.
 #' @export
-run_compendium <- function(bundle, out, overwrite = FALSE) {
+run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
+  cores <- check_cores(cores); par_log_reset()
   if (dir.exists(out) && length(list.files(out, all.files = TRUE, no.. = TRUE))) {
     if (!overwrite) stop_engine(sprintf("The output folder %s already has files in it. Choose a new folder, or use overwrite = TRUE to replace an earlier compendium.", out))
     if (!file.exists(file.path(out, "provenance", "engine.yaml"))) stop_engine(sprintf("The output folder %s has files but was not written by seqcompendium, so it is not replaced.", out))
@@ -103,7 +107,7 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
                                                            c("layer", "predictor", "contrast", "timepoint", "block"), directional = FALSE)
   # The override rule (design 5.3): checks each Q4 default on simulated data
   # from the reference samples, and switches only if it fails (C13).
-  ov <- if (!long) run_override(units, lc$layers, choices, considered, des, bundle) else long_override_note(units, lc$layers, choices, des, bundle, considered)
+  ov <- if (!long) run_override(units, lc$layers, choices, considered, des, bundle, cores) else long_override_note(units, lc$layers, choices, des, bundle, considered)
   w0 <- function(x, ...) if (!is.null(x)) write_csv(x, file.path(out, ...))
   w0(ov$decisions, "02_method_choice", "override.csv"); w0(ov$calibration, "02_method_choice", "simulation", "calibration.csv")
   w0(ov$per_rep, "02_method_choice", "simulation", "per_dataset.csv")
@@ -176,14 +180,14 @@ run_compendium <- function(bundle, out, overwrite = FALSE) {
   write_csv(leads, file.path(out, "05_leads", "leads.csv"))
 
   figures <- draw_figures(out)
-  write_provenance(out, b)
+  write_provenance(out, b, cores)
   write_readme(out)
   write_report(out, list(des = des, leads = leads, q2 = q2, q1 = q1, res = res, choices = choices, considered = considered, profile = profile, controls = controls, check = check,
                          info = gc$info, figures = figures, bundle_path = normalizePath(bundle)))
   invisible(leads)
 }
 
-write_provenance <- function(out, b) {
+write_provenance <- function(out, b, cores_asked = 1L) {
   p <- file.path(out, "provenance"); dir.create(p, showWarnings = FALSE)
   pk <- c("seqcompendium", "iNEXT", "ggplot2", "yaml", "digest", "rmarkdown")
   v <- vapply(pk, function(x) tryCatch(as.character(utils::packageVersion(x)), error = function(e) "not installed"), "")
@@ -193,6 +197,8 @@ write_provenance <- function(out, b) {
                         seeds = list(engine = sprintf("R-SEED %d; each step adds a fixed offset", rule("R-SEED")),
                                      bundle = b$manifest$produced_by$seed %||% "not stated by the bundle"), run_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
                    file.path(p, "engine.yaml"))
+  # The one file allowed to differ between core counts (V-E10b): what was asked, what was used, and why.
+  yaml::write_yaml(list(cores_asked = cores_asked, workers_used = par_log_get(), note = "the override check's simulated data sets run side by side; the numbers do not depend on this"), file.path(p, "run_settings.yaml"))
   f <- file.path(b$path, b$inputs)
   writeLines(sprintf("%s  %s", vapply(f, function(x) digest::digest(file = x, algo = "sha256"), ""), b$inputs), file.path(p, "inputs.sha256"))
 }
