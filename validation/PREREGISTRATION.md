@@ -302,3 +302,85 @@ The counts of each method do not depend on the override check, which only choose
 (Wallen's two tables are about 3 MB); anything too large for the Mac runs the same quick-count script on ISCA, by scripts Claude prepares and the
 user submits (no email, account or path in them). The planted-truth marks run as V-E3 and V-E4 do. Results go to `validation/results/<release>/`
 as small tables only.
+
+## 10. The multi-core milestone: mark V-E10b
+
+*Added 2026-11-19, before any code for it exists. Sections 1-9 are unchanged. Accepted by the user: the seven recommendations of the draft
+(2026-11-16/17, "I like all 7", relayed by the coordinating session) and the widening to both replicate loops (2026-11-18, "A"). Written from the
+draft `ve10b_preregistration_draft.md` (outside the repository) with its dated updates folded in; no number was changed.*
+
+### 10.1 What changes in the engine, and why a mark is needed
+
+`run_compendium(..., cores = 1L)`, **default 1**, so every existing run, number and V-E10 stays exactly as it is. The validation grid and every
+existing mark run at `cores = 1`; a core count is never changed in the middle of a grid. Only the override check's simulated data sets run side by side:
+**both replicate loops in `R/override.R`**: (1) the calibration replicates in `calibrate_unit` (100, seeds `seed_for(5000) + 1000 x unit_index + r`) and
+(2) the minimum-detectable-effect replicates in `mde_unit` (5 fold changes x R-SIMREP/2 = 50, so 250 simulated data sets, seeds
+`seed_for(9000) + 1000 x unit_index + 100 x j + r`). Everything else stays serial (bundle reading, one MIDASim fit per unit, the default-method fit per
+question, the single DivNet fit per Q2 call, the report). Option B (across comparisons) and option C (threads inside methods) are **not** approved.
+
+More cores must **never change the answer.** V-E10b is the test that more cores give the same bytes. It adds to V-E10 (repeat runs identical) and
+changes no existing mark. We already met one way this breaks: the first DivNet call loaded a package (`snow`) that drew random numbers and shifted the
+stream (D53).
+
+Rules that keep 1 worker and N workers identical (each is tested), applying to **both** loops:
+1. A replicate's random numbers depend only on its own fixed seed (above), never on the worker or on what the worker did before.
+2. Every worker loads, **before it sets any seed**, the packages that draw random numbers when they load (`load_before_seed(DIVNET_LOADS)`).
+3. Results are joined in task order (replicate 1, 2, 3, ...; the minimum-detectable-effect results in fold-change and replicate order), never in the order workers finish.
+4. Every worker uses the same `RNGkind`, one BLAS thread and `OMP_NUM_THREADS = 1`.
+5. Workers are forked (`parallel::mclapply`) on Linux and macOS, which includes every container and WSL2; native Windows R cannot fork, so Windows users run the engine in WSL2 or Docker.
+
+**The worker rule, sized per loop.** For each loop separately:
+`workers = max(1, min(cores asked, detected cores - 1, floor((available RAM - 1 GB) / that loop's measured per-worker peak)))`. The engine runs replicate 1 of the loop alone
+first, measures its peak memory, and sizes the others from it; replicate 1's result does not depend on the worker count. Memory is planned as **N times the single-process peak**
+(forked workers mostly copy; measurement M1, section 10.4). The engine says what it chose and why ("you asked for 8; using 3: this machine has 8 GB and each worker needs about 2.5 GB").
+*(Per-loop sizing, rather than one rule from the larger peak, is the recommendation recorded after the MDE timing; it is flagged in the pull request for the user's yes.)*
+
+### 10.2 The marks
+
+All identity marks use the comparison V-E10 already uses (`ve10run` / `ve10cmp` in `validation/mac_marks.R`): **every `.csv` file under the output tree, same file set, md5 byte-by-byte**.
+V-E10b excludes exactly what V-E10 excludes; `provenance/run_settings.yaml` (which records `cores_asked`, `workers_used` and the reason) is not a `.csv` and is the **only** file that may differ across
+core counts. Frozen before any run: nothing else in the compared output may depend on the core count; if any compared file differs, that is a fail.
+**A bundle on which the planted draw cannot be made (D60) is not used for these marks.**
+
+| Mark | What is checked | Data | Pass |
+|---|---|---|---|
+| **V-E10b-1 Identity** | The same engine version, container and bundle run at **cores = 1, 2 and 4**: every compared file byte-identical across the three | The main toy bundle (36 KB) and the first 4 V-E1 bundles in table order (s001-s004: 656 KB, 1.1 MB, 656 KB, 1.1 MB; shotgun1 two_group, blocks, paired, paired_blocks, n = 10), the same 5 as V-E10 | All 5 bundles identical across all three core counts |
+| **V-E10b-2 Order** | As 1, at cores = 4, with the tasks handed to the workers in a **shuffled** order (a fixed shuffle seed) | the same 5 bundles | byte-identical to the cores = 1 output |
+| **V-E10b-3 Repeat** | cores = 4 run twice (V-E10 for the parallel path) | the same 5 bundles | byte-identical |
+| **V-E10b-4 Memory rule** | A unit test on hand-made inputs of the worker formula: (RAM 8 GB, 8 cores, peak 2.5 GB) gives 2 workers; (RAM 8, cores 8, peak 13.5) gives 1; (RAM 64, cores 4, peak 13.5) gives 3; asking for 1 gives 1; the message names the limiting factor. A worker killed on purpose (out of memory, simulated) stops the run with a message that names the setting, and **writes no result with a gap** | no data; a function test | every case equals its written answer |
+| **V-E10b-5 Tasks join in order** | Results come back in the order of their numbers whatever order they finish in (a test that makes replicate 1 the slowest), for **both** loops | a small override run on the main toy | the result tables equal the serial tables |
+| **V-E10b-6 Cluster identity (optional to run)** | ArcticFreshwaters (936 samples, 1,069 features after the filter) at **cores = 1** (the rerun already drafted, which doubles as the baseline) and at **cores = 4**: all compared files byte-identical | one task each, on the cluster (10.5) | byte-identical |
+
+The compared output already contains the override decisions table (`mde_log2`, `mde_note`) and the calibration tables, so the same byte-comparison covers both loops.
+
+**Frozen definition of a fail.** A single differing byte in any compared file in V-E10b-1, -2, -3 or -6, a memory-rule case that differs from its written answer, or a result table with a gap or out of order.
+There is no tolerance: same bytes, as V-E10. V-E10b-6 is optional to run; a failing one blocks only the claim "validated at real size", not the Mac-size marks V-E10b-1 to -5.
+
+### 10.3 Release and what happens after a fail
+
+V-E10b gates the multi-core version only; v0.1.0 does not depend on it. The version is tagged only if every pre-registered mark passes (9.11). After a fail (as section 8):
+1. The release containing this milestone stops; nothing depending on it moves on.
+2. The cause is found and fixed **once**. Every other mark runs again (regression check).
+3. The failed mark is confirmed on **fresh data**: new seeds (+ 500000), and for V-E10b-1 the next four V-E1 bundles in table order.
+4. If it still fails, or the fix would change a mark or a decided design choice, it goes to the user. A mark is never loosened.
+
+Likely causes to look at first: a package that draws random numbers on load (the D53 case); a worker inheriting a random-number state from the parent (each replicate must set its own seed first); a result written in finishing order; a BLAS library using more than one thread.
+
+### 10.4 Measurements (reported, not pass/fail; none sets a threshold)
+
+- **M1, do workers share the loaded data? Measured 2026-11-17 (Wallen dataset 1 table, existing engine).** Workers mostly copy: one worker peaked at 3,103 MB, two forked workers at 6,620 MB (2.13 times). Planning rule: N times the single-process peak.
+- **M2, speed-up, 16S1 template, 8 fixed override replicates (calibration loop):** 1.45 times at 2 workers (1,945 s to 1,337 s), peak 2,582 MB to 5,297 MB, about 2.2 GB per worker; raw results identical at 1 and 2 workers (informal). Stage 1 is about 50.5% of a run.
+- **M3, the minimum-detectable-effect loop:** about 49% of a run, so about 99% of a run is in the two loops. 94 s per simulation (93.5 s is MIDASim). 10 fixed simulations: 942 s (1 worker), 485 s (2), 294 s (4): 1.94 times at 2 workers, 3.20 times at 4 (the 3,3,2,2 split cost time); 20 simulations at 4 workers: 488 s against 1,884 s extrapolated, **3.86 times, 96.5% efficiency**. About 0.8 GB per extra worker; peak 3.25-3.29 GB at 4 workers. All results identical to the 1- and 2-worker output (informal).
+- **Estimate, not measured end to end:** a 16S1 run (13.4 h at one core) at 2 workers for the calibration loop and 4 for the MDE loop: about 6.4 h (2.1 times), against 8.1 h with 2 workers for both. **No speed-up is pre-registered**; only the byte-identity marks are. A speed-up below 1.2 times at 2 cores would be reported as "not worth it" and sent to the user.
+- On the Mac's 8 GB: the calibration loop fits 2 workers; the MDE loop fits 4; 4 workers of the calibration loop do not fit (they would need the cluster).
+
+### 10.5 The cluster check and its request (V-E10b-6; the user runs it, Claude only prepares scripts)
+
+- **Partition (a lesson, 2026-11-16).** The default `sq` allows **7 days**, so a request longer than 7 days cannot go there. Use a **21-day partition** for long requests: `pq`, `phi`, `highmem`, `mrcq`, `mrchq`, `tofu`, `stellarprop`, `stellarprop28`, `monsoon`, `mrcrq`, `sequencing`, `bioseq` or `idsaivolta` (from the user's `sinfo`). The nodes must also hold the cores and memory: `pq` shows 16+ CPUs and 120000 MB. Check `scontrol show partition <name>` and `sinfo -o "%P %l %c %m"` before submitting. The partition rule applies to every cluster run of this milestone.
+- The 4-core request: `--cpus-per-task=4`, **64 GB** (4 workers x 13.5 GiB = 54 GiB, workers being assumed to copy), `--time=14-00:00:00` or the partition maximum (a limit is a request, not a cost); separate output folder, job name and log. The engine is installed with one BLAS thread (`OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`). The 1-core Freshwaters runs timed out at 7 days on `sq`.
+- No email, account or path goes into any script.
+
+### 10.6 Where and when it runs
+
+Docker on the Mac, one heavy container at a time, 8 GB, work outside the repository, the disk guard on. **Cores up to 4 only where results cannot change:** the identity runs are the only runs that use more than one core; every other Mac job stays at 1.
+The identity runs (V-E10b-1 to -3): V-E10 took about 3.5 hours (clean) to about 10 hours (Mac otherwise busy) for the five bundles at one core; **estimated** 12-20 hours over the five runs (1, 2, 4, shuffled 4, repeated 4), one after another; not measured. V-E10b-4 and -5 take seconds. Order: this section merges **before any code**; then the code is written on a branch from main, tests first; then V-E10b-1 to -5 run on the Mac; then, if the user wishes, V-E10b-6 on the cluster. One pull request for the milestone; merge commit.
