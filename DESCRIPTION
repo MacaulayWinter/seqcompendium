@@ -36,6 +36,7 @@ Imports:
     MicrobiomeStat,
     MIDASim,
     mvabund,
+    parallel,
     permute,
     pscl,
     S4Vectors,

@@ -19,6 +19,7 @@
 #          with the same engine and container: every CSV must be byte-identical
 #          to the first run. Writes ve10.csv.
 #   marks  the four V-E2b parts and V-E10 as rows of marks.csv: mac_marks.csv.
+#   ve10brun, ve10bcmp  V-E10b (section 10): the same bundles at 1, 2 and 4 cores, shuffled, repeated (see below).
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 3) stop("usage: mac_marks.R <ve1|ctl|noctl|ve10|marks> <templates dir> <results dir>")
 phase <- args[1]; tdir <- args[2]; rdir <- args[3]
@@ -131,6 +132,33 @@ if (phase == "ve10cmp") {
   utils::write.csv(mark_row("V-E10", sprintf("main toy and the first 4 V-E1 bundles run twice (runs %s, %s; fixed engine): every CSV byte-identical", a, b), mean(ok), "= 1", all(ok), nrow(res)),
                    file.path(rdir, sprintf("ve10_%s_%s_mark.csv", a, b)), row.names = FALSE)
   print(res); stamp("V-E10 confirmation:", sum(ok), "of", nrow(res), "identical")
+}
+
+# V-E10b (section 10 of the pre-registration): the same five bundles at other core counts, each run in its own R process (its own container), toy first.
+#   ve10brun <label> <cores> [shuffle seed]   the main toy and bundles 1-4 into out_<label>/ at that many cores (a shuffle seed hands the tasks out in a shuffled order)
+#   ve10bcmp <a> <b> <mark name>             compares out_<a>/ with out_<b>/ exactly as ve10cmp does (every CSV, same file set, md5): ve10b_<a>_<b>.csv and its mark row
+if (phase == "ve10brun") {
+  lab <- args[4]; cores <- as.integer(args[5]); if (length(args) >= 6 && args[6] != "-") options(seqcompendium.shuffle_seed = as.integer(args[6]))
+  o <- file.path(rdir, paste0("out_", lab)); engine_b <- function(b, o) tryCatch({ unlink(o, recursive = TRUE); suppressMessages(suppressWarnings(run_compendium(b, o, cores = cores))); NA_character_ }, error = function(e) conditionMessage(e))
+  toy <- file.path(rdir, "toy_bundle"); if (!dir.exists(toy)) make_toy_bundle(toy)
+  stamp("ve10brun", lab, "cores", cores, "toy"); err <- engine_b(toy, file.path(o, "toy")); if (!is.na(err)) stop("toy: ", err)
+  for (s in utils::head(v1$scenario, 4)) { stamp("ve10brun", lab, "cores", cores, s); err <- engine_b(bdir(s), file.path(o, sprintf("s%03d", s))); if (!is.na(err)) stop("s", s, ": ", err) }
+  stamp("ve10brun", lab, "done")
+}
+if (phase == "ve10bcmp") {
+  a <- args[4]; b <- args[5]; mk <- args[6]
+  csvs <- function(o) sort(list.files(o, pattern = "\\.csv$", recursive = TRUE))
+  same <- function(x, y) {
+    fa <- csvs(x); fb <- csvs(y)
+    differ <- fa[vapply(fa, function(f) !file.exists(file.path(y, f)) || !identical(unname(tools::md5sum(file.path(x, f))), unname(tools::md5sum(file.path(y, f)))), TRUE)]
+    data.frame(files = length(fa), same_file_set = identical(fa, fb), files_differing = length(differ), differing = paste(utils::head(differ, 10), collapse = "; "))
+  }
+  dirs <- c(toy = "toy", stats::setNames(sprintf("s%03d", utils::head(v1$scenario, 4)), utils::head(v1$label, 4)))
+  res <- do.call(rbind, lapply(names(dirs), function(n) cbind(bundle = if (n == "toy") "main toy" else n, same(file.path(rdir, paste0("out_", a), dirs[[n]]), file.path(rdir, paste0("out_", b), dirs[[n]])))))
+  utils::write.csv(res, file.path(rdir, sprintf("ve10b_%s_%s.csv", a, b)), row.names = FALSE)
+  ok <- res$same_file_set & res$files_differing == 0
+  utils::write.csv(mark_row(mk, sprintf("main toy and the first 4 V-E1 bundles, runs %s and %s: every CSV byte-identical", a, b), mean(ok), "= 1", all(ok), nrow(res)), file.path(rdir, sprintf("ve10b_%s_%s_mark.csv", a, b)), row.names = FALSE)
+  print(res); stamp(mk, "confirmation:", sum(ok), "of", nrow(res), "identical")
 }
 
 if (phase == "marks") {
