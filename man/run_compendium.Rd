@@ -4,7 +4,7 @@
 \alias{run_compendium}
 \title{Run the compendium engine on a bundle}
 \usage{
-run_compendium(bundle, out, overwrite = FALSE)
+run_compendium(bundle, out, overwrite = FALSE, cores = 1L)
 }
 \arguments{
 \item{bundle}{the bundle folder (design §2).}
@@ -14,6 +14,10 @@ or be empty, unless `overwrite = TRUE`, which replaces only a folder this
 engine wrote before.}
 
 \item{overwrite}{replace an earlier compendium in `out`.}
+
+\item{cores}{how many cores the override check's simulated data sets may use (default 1, one after another).
+More cores change only the time, never a number: the engine sizes the workers from the memory a simulated data set needs and says what it chose in
+`provenance/run_settings.yaml`. Forked workers need Linux or macOS (including Docker and WSL2).}
 }
 \value{
 the leads table, invisibly. Stops with a classed condition
