@@ -1,0 +1,6 @@
+"reference","method_id","count","features_tested","samples","failed","note","seconds","versions"
+"zhou_RA_g4","D17",2,438,72,FALSE,"",0,"ALDEx2 1.44.0; lefser 1.22.0; ANCOMBC 2.14.0; MicrobiomeStat 1.4; seqcompendium 0.0.0.9005"
+"zhou_RA_g4","D19",54,438,72,FALSE,"",5,"ALDEx2 1.44.0; lefser 1.22.0; ANCOMBC 2.14.0; MicrobiomeStat 1.4; seqcompendium 0.0.0.9005"
+"zhou_RA_g4","D04",1,438,72,FALSE,"",7,"ALDEx2 1.44.0; lefser 1.22.0; ANCOMBC 2.14.0; MicrobiomeStat 1.4; seqcompendium 0.0.0.9005"
+"zhou_RA_g4","D06",176,438,72,FALSE,"",63,"ALDEx2 1.44.0; lefser 1.22.0; ANCOMBC 2.14.0; MicrobiomeStat 1.4; seqcompendium 0.0.0.9005"
+"zhou_RA_g4","D09",46,438,72,FALSE,"",1,"ALDEx2 1.44.0; lefser 1.22.0; ANCOMBC 2.14.0; MicrobiomeStat 1.4; seqcompendium 0.0.0.9005"

@@ -1,0 +1,17 @@
+=== CDI g4f start 2026-11-18 21:27:22 disk 14 GB
+=== CDI g4f end exit 0 2026-11-18 21:27:55
+=== IBD g4f start 2026-11-18 21:27:55 disk 14 GB
+=== IBD g4f end exit 0 2026-11-18 21:29:26
+=== RA g4f start 2026-11-18 21:29:30 disk 14 GB
+=== RA g4f end exit 0 2026-11-18 21:30:58
+=== SMOKE g4f start 2026-11-18 21:30:58 disk 14 GB
+=== SMOKE g4f end exit 0 2026-11-18 21:31:54
+=== CDI g4 start 2026-11-18 21:31:54 disk 14 GB
+=== CDI g4 end exit 0 2026-11-18 21:32:27
+=== IBD g4 start 2026-11-18 21:32:27 disk 14 GB
+=== IBD g4 end exit 0 2026-11-18 21:35:46
+=== RA g4 start 2026-11-18 21:35:46 disk 14 GB
+=== RA g4 end exit 0 2026-11-18 21:37:09
+=== SMOKE g4 start 2026-11-18 21:37:09 disk 14 GB
+=== SMOKE g4 end exit 0 2026-11-18 21:38:40
+=== g4 all done 2026-11-18 21:38:40
