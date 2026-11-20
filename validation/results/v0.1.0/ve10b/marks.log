@@ -1,0 +1,15 @@
+=== run a cores 1 shuffle - start 2026-11-19 19:53:26 disk 14 GB
+=== run a end exit 0 2026-11-19 23:27:40
+=== run b cores 2 shuffle - start 2026-11-19 23:27:40 disk 12 GB
+=== run b end exit 0 2026-11-20 02:54:51
+=== run c cores 4 shuffle - start 2026-11-20 02:54:51 disk 12 GB
+=== run c end exit 0 2026-11-20 06:17:49
+=== run d cores 4 shuffle 7 start 2026-11-20 06:17:49 disk 12 GB
+=== run d end exit 0 2026-11-20 09:49:26
+=== run e cores 4 shuffle - start 2026-11-20 09:49:26 disk 13 GB
+=== run e end exit 0 2026-11-20 13:13:08
+=== compare a b (V-E10b-1) done 2026-11-20 13:13:12
+=== compare a c (V-E10b-1) done 2026-11-20 13:13:16
+=== compare a d (V-E10b-2) done 2026-11-20 13:13:20
+=== compare c e (V-E10b-3) done 2026-11-20 13:13:24
+=== V-E10b marks all done 2026-11-20 13:13:24
