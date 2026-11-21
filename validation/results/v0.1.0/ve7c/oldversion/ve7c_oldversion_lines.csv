@@ -1,0 +1,5 @@
+"reference","dataset","method_id","engine_count","reference_count","allowance","count_ok","sign_agreement","rule2","spearman","rule3","flipped","ok","note"
+"Wallen 2021 (older version)","dataset 1","D04",1,11,2,FALSE,1,TRUE,0.503030303030303,FALSE,TRUE,FALSE,"ALDEx2 1.22.0"
+"Wallen 2021 (older version)","dataset 1","D06",45,31,1.55,FALSE,1,TRUE,0.921492921492922,TRUE,TRUE,FALSE,"ANCOM-BC 1.0.5"
+"Wallen 2021 (older version)","dataset 2","D04",13,30,2.4,FALSE,1,TRUE,0.892769744160178,TRUE,TRUE,FALSE,"ALDEx2 1.22.0"
+"Wallen 2021 (older version)","dataset 2","D06",161,81,4.05,FALSE,1,TRUE,0.866056049213944,TRUE,TRUE,FALSE,"ANCOM-BC 1.0.5"
