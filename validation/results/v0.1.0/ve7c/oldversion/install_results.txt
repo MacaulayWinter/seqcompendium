@@ -1,0 +1,8 @@
+R version 4.6.1 (2026-06-24) -- "Happy Hop"
+downloaded 1834327 bytes
+loaded 1.22.0 
+RESULT ALDEx2_1.22.0: INSTALLED AND LOADS
+downloaded 403584 bytes
+loaded 1.0.5 
+RESULT ANCOMBC_1.0.5: INSTALLED AND LOADS
+RESULT lefse_1.0.8: NOT TESTABLE here (1.0.8 not on PyPI; the tool is distributed through conda/bioconda and Galaxy, not installable in this R image)
