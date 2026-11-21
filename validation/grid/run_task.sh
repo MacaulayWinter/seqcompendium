@@ -13,10 +13,14 @@ i="$1"; ENV_DIR="${SEQCOMP_ENV:-$VAL/env}"
 source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate "$ENV_DIR"
 source validation/grid/isolate_env.sh   # only the environment's own libraries (D44)
 export R_LIBS_USER="$ENV_DIR/Rlib" OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
-n=$(wc -l < "$VAL/tasks.tsv")
+# FRESH=1: the V-E7(c) planted-truth list (tasks_fresh.tsv, fresh templates, no V-E6 tasks)
+TASKS="$VAL/tasks${FRESH:+_fresh}.tsv"
+n=$(wc -l < "$TASKS")
 if [ "$i" -le "$n" ]; then
-  read -r S FIRST LAST < <(sed -n "${i}p" "$VAL/tasks.tsv")
+  read -r S FIRST LAST < <(sed -n "${i}p" "$TASKS")
   Rscript validation/run.R "$S" "$FIRST" "$LAST" "$VAL/templates" "$VAL/results" ${FRESH:+fresh}
+elif [ -n "${FRESH:-}" ]; then
+  echo "task $i is beyond the $n fresh tasks" >&2; exit 2
 else
   read -r FAM FIRST LAST < <(sed -n "$((i - n))p" "$VAL/tasks_ve6.tsv")
   Rscript validation/ve6_diagnostics.R "$FAM" "$FIRST" "$LAST" "$VAL/results"
