@@ -384,3 +384,38 @@ Likely causes to look at first: a package that draws random numbers on load (the
 
 Docker on the Mac, one heavy container at a time, 8 GB, work outside the repository, the disk guard on. **Cores up to 4 only where results cannot change:** the identity runs are the only runs that use more than one core; every other Mac job stays at 1.
 The identity runs (V-E10b-1 to -3): V-E10 took about 3.5 hours (clean) to about 10 hours (Mac otherwise busy) for the five bundles at one core; **estimated** 12-20 hours over the five runs (1, 2, 4, shuffled 4, repeated 4), one after another; not measured. V-E10b-4 and -5 take seconds. Order: this section merges **before any code**; then the code is written on a branch from main, tests first; then V-E10b-1 to -5 run on the Mac; then, if the user wishes, V-E10b-6 on the cluster. One pull request for the milestone; merge commit.
+
+## 11. Version-difference tests for the Wallen 2021 reference
+
+### 11.1 Why
+Section 9.4 notes that Wallen 2021 used older packages (ALDEx2 1.22.0, DESeq2 1.30.1, ANCOM-BC 1.0.5, edgeR 3.32.1, LEfSe 1.0.8) and that a difference explained only by a version is
+reported, not passed. This section fixes, before any such run, how a version explanation may be tested and what it can and cannot change.
+
+### 11.2 What is run (diagnostic only)
+For each method whose count in V-E7(c) differs from the reference by more than its 9.5 allowance: the **same quick-count script** (`validation/ve7c_quick.R`, no override check, the same feature
+table, the same 10% prevalence rule, the engine's own seeds) is run with the method's **older version installed in a separate library**. One older version per method (the version the
+paper names); nothing else changes. ANCOM-BC 1.0.5 stands in for ANCOM-BC2 only as "the paper's ANCOM-BC", and is reported as that; LEfSe is run with the paper's definition of the
+tool only if the old release installs, else reported as not testable.
+
+### 11.3 The rule, fixed now
+1. **Version-explained** (a label, not a pass) when both hold: the old-version count agrees with the reference within the same 9.5 allowance (t_rel x the reference's count, t_abs),
+   **and** the old-version count differs from the engine's current-version count by more than that allowance.
+2. If only one holds, or the old version does not install, the difference is **not explained** and is reported as such.
+3. A label never edits a 9.5 result. The status of the method stays **not congruent**, and 9.7 is applied to the 9.5 results only.
+4. Direction (95% same sign) and ranking (Spearman >= 0.8) are reported for the old version, with the same numbers, and are never used to rescue a count.
+
+### 11.4 What this cannot do
+- It cannot change any tolerance, any count already scored, or the outcome of 9.7. Sections 9.10 and "no rescuing" apply.
+- It cannot count as a reference or add to N.
+- One paper is not a sufficient reference: a version explanation supports a decision for the user; it does not replace the three-reference rule.
+- If an older-version result were to pass a method that failed, that is reported beside the fail, and **the user decides**; nothing is re-scored automatically.
+
+### 11.5 Cost and where
+Mac, one container, 8 GB, 1 core; a separate library per old version. Installing an old Bioconductor version may not be possible on the current R; if it does not install, the method is reported **"not testable"**, plainly, and nothing is substituted.
+Estimate: under 1 h per method per table once installed. Heavy installs are the only risk. No old-version test is run before this section has merged.
+
+### 11.6 Status of this section: a post-result addition (said plainly, as 9.10 requires)
+**The reference's counts had already been read when this section was written.** The Wallen 2021 reference counts had been read before this section was written, so this section is a
+**post-result addition**: it was written, approved and merged before any old-version run, but after the scored result was known. It therefore cannot be used to turn a fail into a pass, and 11.3 and 11.4 say so.
+Approved by the user on 2026-11-21 as written, with: A. the 9.5 allowance is the test of "agrees with the reference" (no new tolerance); B. this statement; C. **Zhou 2022 gets no such test** (its difference
+was a design difference, G4, already handled in `validation/results/v0.1.0/ve7c/zhou_g4/`).
