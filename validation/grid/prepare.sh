@@ -10,4 +10,4 @@ source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate "$ENV_DIR"
 source validation/grid/isolate_env.sh   # only the environment's own libraries (D44)
 export R_LIBS_USER="$ENV_DIR/Rlib" EXPERIMENT_HUB_CACHE="$VAL/hubcache"
 Rscript validation/fetch_templates.R "$VAL/templates"
-Rscript validation/grid/make_tasks.R "$VAL" "${RUNS_PER_TASK:-2}"
+Rscript validation/grid/make_tasks.R "$VAL" "${RUNS_PER_TASK:-2}" ${FRESH:+fresh}   # FRESH=1: tasks_fresh.tsv only (V-E7(c) planted truth)
