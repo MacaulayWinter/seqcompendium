@@ -4,11 +4,15 @@
 # The tables are large (ArcticFreshwaters: 178,927 ASVs x 2,468 samples, 1.8 GB of
 # text), so they are read with data.table and filtered column by column before
 # becoming a matrix (features x samples).
-read_asvs <- function(f, samples) {
+# prev_over = "analysed" (the default, as before): the 10% is counted over the analysed samples.
+# prev_over = "all_samples" (optional, D66): over every sample of the table, in the order the paper's own script evidently used.
+read_asvs <- function(f, samples, prev_over = c("analysed", "all_samples")) {
+  prev_over <- match.arg(prev_over)
   dt <- data.table::fread(f, skip = 1, header = TRUE, sep = "\t", showProgress = FALSE)
   feat <- dt[[1]]; keep <- intersect(samples, names(dt)[-1])
-  nz <- integer(nrow(dt)); for (k in keep) nz <- nz + (dt[[k]] > 0)
-  rows <- nz >= 0.10 * length(keep)                       # the paper's filter: present in >= 10% of samples
+  cnt <- if (prev_over == "all_samples") names(dt)[-1] else keep
+  nz <- integer(nrow(dt)); for (k in cnt) nz <- nz + (dt[[k]] > 0)
+  rows <- nz >= 0.10 * length(cnt)                        # the paper's filter: present in >= 10% of samples
   m <- vapply(keep, function(k) as.numeric(dt[[k]][rows]), numeric(sum(rows)))
   rownames(m) <- feat[rows]
   m
@@ -19,7 +23,9 @@ VE7B_SETS <- list(ArcticFireSoils = list(label = "Soil - Fires", column = "Fire"
 
 # Writes data set d as an engine bundle in folder b and returns its matrix
 # (features x samples after the paper's 10% filter).
-ve7b_write_bundle <- function(sdir, d, s, b) {
+ve7b_write_bundle <- function(sdir, d, s, b, filter = c("analysed", "all_samples")) {
+  filter <- match.arg(filter)
+  if (filter == "all_samples" && d != "ArcticFreshwaters") stop("the optional all-samples prevalence filter is for ArcticFreshwaters only (CLAUDE.md D66)")
   dir.create(file.path(b, "metadata"), recursive = TRUE); dir.create(file.path(b, "layers"))
   meta <- utils::read.delim(file.path(sdir, d, sprintf("%s_meta.tsv", d)), check.names = FALSE, comment.char = "")
   names(meta)[1] <- "sample"
@@ -27,7 +33,7 @@ ve7b_write_bundle <- function(sdir, d, s, b) {
   # <data set>_ASVs_table_rare.tsv; Source Data "Figure1B_dataset_char (filt)" gives
   # 147 and 936 samples), with the unrarefied counts (D48).
   rare <- strsplit(readLines(file.path(sdir, d, sprintf("%s_ASVs_table_rare.tsv", d)), n = 2)[2], "\t")[[1]][-1]
-  m <- read_asvs(file.path(sdir, d, sprintf("%s_ASVs_table.tsv", d)), intersect(meta$sample[!is.na(meta[[s$column]]) & nzchar(meta[[s$column]])], rare))
+  m <- read_asvs(file.path(sdir, d, sprintf("%s_ASVs_table.tsv", d)), intersect(meta$sample[!is.na(meta[[s$column]]) & nzchar(meta[[s$column]])], rare), filter)
   keep <- colnames(m)
   lv <- sort(unique(meta[[s$column]][match(keep, meta$sample)]))
   utils::write.table(data.frame(sample = keep, group = meta[[s$column]][match(keep, meta$sample)]), file.path(b, "metadata/study_metadata.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
@@ -88,7 +94,7 @@ ve7b_engine_failure <- function(id, ag, ds, df = NULL) {
 # The engine's own tables, notes and report are copied out of the compendium
 # before it is deleted, so a difference can be traced without a rerun.
 VE7B_KEEP <- c("04_agreement/Q4.csv", "04_agreement/Q4_describe_only.csv", "03_results/Q4_differential/results.csv",
-               "00_input_check/bundle_check.csv", "report/compendium_report.md", "provenance/engine.yaml")
+               "00_input_check/bundle_check.csv", "report/compendium_report.md", "provenance/engine.yaml", "provenance/step_timings.tsv")
 ve7b_keep_engine_files <- function(out, keep_dir) {
   unlink(keep_dir, recursive = TRUE); dir.create(keep_dir, recursive = TRUE)
   have <- VE7B_KEEP[file.exists(file.path(out, VE7B_KEEP))]

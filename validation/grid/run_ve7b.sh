@@ -13,4 +13,5 @@ case "$1" in 1) D=ArcticFireSoils ;; 2) D=ArcticFreshwaters ;; *) echo "task mus
 source "$(conda info --base)/etc/profile.d/conda.sh"; conda activate "$ENV_DIR"
 source validation/grid/isolate_env.sh   # only the environment's own libraries (D44)
 export R_LIBS_USER="$ENV_DIR/Rlib" OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+export SEQCOMPENDIUM_TIMING_LOG=1   # one line per engine stage in the job log (D69); VE7B_FILTER=all_samples is the optional filter (D66)
 Rscript validation/ve7b_nearing.R "$VAL/nearing/Hackathon/Studies" "$VAL/nearing/source_data_all.xlsx" "$VAL/${VE7B_OUT:-results_ve7b}" "$D"

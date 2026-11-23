@@ -419,3 +419,22 @@ Estimate: under 1 h per method per table once installed. Heavy installs are the 
 **post-result addition**: it was written, approved and merged before any old-version run, but after the scored result was known. It therefore cannot be used to turn a fail into a pass, and 11.3 and 11.4 say so.
 Approved by the user on 2026-11-21 as written, with: A. the 9.5 allowance is the test of "agrees with the reference" (no new tolerance); B. this statement; C. **Zhou 2022 gets no such test** (its difference
 was a design difference, G4, already handled in `validation/results/v0.1.0/ve7c/zhou_g4/`).
+
+## 12. Changes made after the recorded V-E7b outcome (appended 2026-11-23)
+
+### 12.1 Status of this section: post-result changes, said plainly (as 9.10 requires)
+V-E7(b) has a recorded outcome: **ArcticFireSoils is a recorded fail** (section 9.10), and the ArcticFreshwaters rerun (ISCA job 2821827_2, fixed engine 7874e13) has been read: its counts were three to four times the paper's, and
+the script printed ALDEx2 as failed. **These changes were made after those results were known.** They edit no recorded result, no mark and no tolerance; the recorded outcomes stay on record unchanged, and nothing here
+can turn a recorded fail into a pass. A later run is a further data point, reported beside the earlier ones.
+
+### 12.2 The changes (CLAUDE.md D66 to D69)
+1. **An optional prevalence filter for ArcticFreshwaters** (`VE7B_FILTER=all_samples`): the 10% prevalence counted over every sample of the table, which is how the paper's own Source Data reads (346 features against the paper's 344).
+   Off by default; for ArcticFreshwaters only; the engine's own rule R-PREV is not changed.
+2. **LinDA is retried once without samples under 50 reads (R-LINDAFLOOR), only after it has stopped** with an error, and every result says so. Where LinDA works, output is byte-identical to before.
+3. **The V-E7b scorer reads the default table as well as the agreement table**, so a method the override made the primary is counted.
+4. **Per-step timings** in `provenance/step_timings.tsv`.
+
+### 12.3 What this does not do
+- It does not change the count a run is compared with, the pass rule (every count equal, section 5), or any tolerance.
+- The floor 50 was fixed from a toy sweep with a known answer, before any real rerun, and is not tuned to a real result.
+- Neither run (with or without the filter) replaces the recorded one; if a rerun with the new code is made, its result is reported as it comes, whatever it is.
