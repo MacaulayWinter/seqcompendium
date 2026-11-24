@@ -10,10 +10,14 @@
 #' @param cores how many cores the override check's simulated data sets may use (default 1, one after another).
 #'   More cores change only the time, never a number: the engine sizes the workers from the memory a simulated data set needs and says what it chose in
 #'   `provenance/run_settings.yaml`. Forked workers need Linux or macOS (including Docker and WSL2).
+#' @param screen the prevalence screen (D70): `"default"` reports how the choice of samples changes the features tested, and in one narrow
+#'   case (most study samples are not in the comparison and the pooled prevalence differs by a factor of two or more) leaves features
+#'   out of the Q4 tests, always listed and named in a caveat; `"report"` never leaves anything out; `"off"` runs no screen and writes none of its files.
 #' @return the leads table, invisibly. Stops with a classed condition
 #'   (`seqcompendium_stop`) naming every problem the user must fix.
 #' @export
-run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
+run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L, screen = "default") {
+  screen <- match.arg(screen, SCREEN_MODES)
   cores <- check_cores(cores); par_log_reset(); .timing$path <- NULL
   if (dir.exists(out) && length(list.files(out, all.files = TRUE, no.. = TRUE))) {
     if (!overwrite) stop_engine(sprintf("The output folder %s already has files in it. Choose a new folder, or use overwrite = TRUE to replace an earlier compendium.", out))
@@ -77,6 +81,12 @@ run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
   lus <- if (is.null(des$long_reason)) long_units(lc$layers, des, cells) else list()
   if (is.null(des$long_reason) && !length(lus)) des$long_reason <- "no predictor with listed levels has two or more timepoints to compare"
   long <- length(lus) > 0
+  # The prevalence screen (D70): report, propose, and (narrow case only) leave features out of Q4. "off" does nothing at all.
+  scr <- if (screen == "off") NULL else timed("prevalence screen", prevalence_screen(units, lc$layers, des, screen, long))
+  if (!is.null(scr) && !is.null(scr$rows) && nrow(scr$rows)) {
+    write_csv(scr$rows, file.path(out, "01_profile", "prevalence_screen.csv")); write_csv(scr$decision, file.path(out, "01_profile", "prevalence_screen_decision.csv"))
+    if (!is.null(scr$removed) && nrow(scr$removed)) write_csv(scr$removed, file.path(out, "01_profile", "prevalence_screen_removed.csv"))
+  }
   if (long) {
     # The longitudinal defaults of design section 5.2 (S1 longitudinal table).
     i2 <- choices$question == "Q2"; i4 <- choices$question == "Q4"
@@ -132,7 +142,7 @@ run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
       z <- sign(r$effect) * stats::qnorm(pmax(r$p, 1e-300) / 2, lower.tail = FALSE)
       list(unit = u, stat = stats::setNames(z, r$feature)[is.finite(z)], ud = unit_data(u, lc$layers[[u$layer]], des), feats = r$feature)
     }))
-  } else q4 <- timed("Q4 differential abundance (primary, agreement methods, LEfSe)", q4_abundance(units, lc$layers, choices, ov$decisions, des))
+  } else q4 <- timed("Q4 differential abundance (primary, agreement methods, LEfSe)", q4_abundance(units, lc$layers, choices, ov$decisions, des, if (is.null(scr)) list() else scr$drop))
   if (!is.null(q4$results)) q4$results <- agreement_labels(q4$results, q4$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
   q5 <- timed("Q5 presence", q5_presence(units, lc$layers, des))
   if (!is.null(q5$results)) q5$results <- agreement_labels(q5$results, q5$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
@@ -181,14 +191,14 @@ run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
   write_csv(leads, file.path(out, "05_leads", "leads.csv"))
 
   figures <- timed("figures", draw_figures(out))
-  write_provenance(out, b, cores)
+  write_provenance(out, b, cores, screen)
   write_readme(out)
   timed("report", write_report(out, list(des = des, leads = leads, q2 = q2, q1 = q1, res = res, choices = choices, considered = considered, profile = profile, controls = controls, check = check,
-                         info = gc$info, figures = figures, bundle_path = normalizePath(bundle))))
+                         info = gc$info, figures = figures, bundle_path = normalizePath(bundle), screen = scr)))
   invisible(leads)
 }
 
-write_provenance <- function(out, b, cores_asked = 1L) {
+write_provenance <- function(out, b, cores_asked = 1L, screen = "default") {
   p <- file.path(out, "provenance"); dir.create(p, showWarnings = FALSE)
   pk <- c("seqcompendium", "iNEXT", "ggplot2", "yaml", "digest", "rmarkdown")
   v <- vapply(pk, function(x) tryCatch(as.character(utils::packageVersion(x)), error = function(e) "not installed"), "")
@@ -199,7 +209,7 @@ write_provenance <- function(out, b, cores_asked = 1L) {
                                      bundle = b$manifest$produced_by$seed %||% "not stated by the bundle"), run_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
                    file.path(p, "engine.yaml"))
   # The one file allowed to differ between core counts (V-E10b): what was asked, what was used, and why.
-  yaml::write_yaml(list(cores_asked = cores_asked, workers_used = par_log_get(), note = "the override check's simulated data sets run side by side; the numbers do not depend on this"), file.path(p, "run_settings.yaml"))
+  yaml::write_yaml(list(cores_asked = cores_asked, screen = screen, workers_used = par_log_get(), note = "the override check's simulated data sets run side by side; the numbers do not depend on this"), file.path(p, "run_settings.yaml"))
   f <- file.path(b$path, b$inputs)
   writeLines(sprintf("%s  %s", vapply(f, function(x) digest::digest(file = x, algo = "sha256"), ""), b$inputs), file.path(p, "inputs.sha256"))
 }

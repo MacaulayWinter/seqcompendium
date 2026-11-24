@@ -36,6 +36,7 @@ write_report <- function(out, ctx) {
   add("## 3. Design as read", "", "Read only from your column guide; nothing about a column was guessed.", "", design_text(des, ctx$info), "")
 
   add("## 4. Shape profile", "", "Every later choice points back to these rows (`01_profile/shape_profile.csv`).", "", md_table(ctx$profile), "")
+  add(screen_report_lines(ctx$screen))
 
   add("## 5. How the methods were chosen", "",
       sprintf("The catalogue has %d methods. For this bundle %d were eligible; every one, with the reason it was or was not, is in `02_method_choice/methods_considered.csv`. Each question then uses the fixed default of the design (section 5.2) for this data shape; the facts it rests on are below. No method was chosen by looking at your data's p-values. For Q4, the default is then checked on simulated data made from your own reference samples, and replaced only if it fails that check (section 10, Q4).",

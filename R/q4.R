@@ -157,11 +157,11 @@ check_lm_clr <- function(ud, f) {
 
 FITS <- list(D01 = fit_deseq2, D09 = fit_linda, D04 = fit_aldex2, D06 = fit_ancombc2, D17 = fit_wilcoxon_clr)
 
-q4_unit <- function(u, layer, default_id, des = NULL) {
+q4_unit <- function(u, layer, default_id, des = NULL, drop = character(0)) {
   ud <- unit_data(u, layer, des)
   if (default_id == "D01" && (anyNA(ud$den) || any(ud$den <= 0)))
     return(list(skip = "a denominator is missing or zero for a sample in this comparison"))
-  feats <- prevalent(ud$m, ud$g)
+  feats <- setdiff(prevalent(ud$m, ud$g), drop)   # drop: features the prevalence screen left out (D70); empty unless its narrow default-apply fired
   if (length(feats) < 2) return(list(skip = "fewer than 2 features pass the prevalence rule (R-PREV)"))
   # A count model has no finite estimate for a feature with no counts in one
   # group: the fit stops wherever the optimiser does, and that number differs
@@ -301,7 +301,7 @@ describe_lefse <- function(ud, feats) {
   data.frame(feature = r$features, lda_score = r$scores, note = "")
 }
 
-q4_abundance <- function(units, layers, choices, decisions = NULL, des = NULL) {
+q4_abundance <- function(units, layers, choices, decisions = NULL, des = NULL, screen_drop = list()) {
   res <- list(); chk <- list(); agr <- list(); desc <- list(); notes <- list(); stats_for_q7 <- list()
   for (i in seq_along(units)) {
     u <- units[[i]]; L <- layers[[u$layer]]
@@ -311,8 +311,10 @@ q4_abundance <- function(units, layers, choices, decisions = NULL, des = NULL) {
     if (!u$testable) { notes[[length(notes) + 1]] <- cbind(key, reason = u$reason); next }
     d <- if (is.null(decisions)) NULL else merge(key, decisions, by = names(key))
     final <- if (!is.null(d) && nrow(d)) d$final_id[1] else ch$final_id
-    x <- q4_unit(u, L, final, des)
+    drop <- screen_drop[[screen_unit_key(u)]]; if (is.null(drop)) drop <- character(0)
+    x <- q4_unit(u, L, final, des, drop)
     if (!is.null(x$skip)) { notes[[length(notes) + 1]] <- cbind(key, reason = x$skip); next }
+    if (length(drop)) x$results$caveat <- ifelse(nzchar(x$results$caveat), paste(x$results$caveat, screen_caveat(length(drop)), sep = "; "), screen_caveat(length(drop)))
     if (!is.null(d) && nrow(d)) {
       if (final != ch$final_id) x$results$method_role <- ifelse(x$results$method_role == "default", "override", x$results$method_role)
       if (nzchar(d$caveat[1])) x$results$caveat <- ifelse(nzchar(x$results$caveat), paste(x$results$caveat, d$caveat[1], sep = "; "), d$caveat[1])
