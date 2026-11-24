@@ -31,7 +31,9 @@ paper <- as.data.frame(readxl::read_excel(xlsx, sheet = "Figure1B_counts (filt)"
 
 for (d in if (is.null(only)) names(SETS) else only) {
   s <- SETS[[d]]; w <- tempfile(d); b <- file.path(w, "bundle"); rows <- list()
-  m <- ve7b_write_bundle(sdir, d, s, b)
+  # Optional (D66): VE7B_FILTER=all_samples counts the 10% prevalence over every sample of the table (ArcticFreshwaters only); the default is unchanged.
+  filt <- Sys.getenv("VE7B_FILTER", "analysed")
+  m <- ve7b_write_bundle(sdir, d, s, b, filt)
   cat(d, ": ", ncol(m), " samples, ", nrow(m), " features after the filter; engine starting ", format(Sys.time()), "\n", sep = "")
   o <- file.path(w, "out"); t0 <- proc.time()[["elapsed"]]
   # On an error the call stack is printed, so the log names the failing step.
@@ -41,11 +43,13 @@ for (d in if (is.null(only)) names(SETS) else only) {
   secs <- proc.time()[["elapsed"]] - t0
   ag <- if (is.na(err)) utils::read.csv(file.path(o, "04_agreement", "Q4.csv")) else NULL
   ds <- if (is.na(err) && file.exists(file.path(o, "04_agreement", "Q4_describe_only.csv"))) utils::read.csv(file.path(o, "04_agreement", "Q4_describe_only.csv")) else NULL
+  # A method the override made the primary is in the default table, not in the agreement table (D68; the lookup exists since D59, this script did not pass it).
+  df <- if (is.na(err) && file.exists(file.path(o, "03_results", "Q4_differential", "results.csv"))) utils::read.csv(file.path(o, "03_results", "Q4_differential", "results.csv")) else NULL
   for (id in names(METHODS)) {
-    n_engine <- if (!is.na(err)) NA else ve7b_engine_count(id, ag, ds)
-    failure <- if (!is.na(err)) "the engine run stopped" else ve7b_engine_failure(id, ag, ds)
+    n_engine <- if (!is.na(err)) NA else ve7b_engine_count(id, ag, ds, df)
+    failure <- if (!is.na(err)) "the engine run stopped" else ve7b_engine_failure(id, ag, ds, df)
     n_paper <- paper[[s$label]][paper$method == METHODS[[id]]]
-    rows[[length(rows) + 1]] <- data.frame(dataset = d, paper_label = s$label, method = METHODS[[id]], samples = ncol(m), features = nrow(m),
+    rows[[length(rows) + 1]] <- data.frame(dataset = d, paper_label = s$label, method = METHODS[[id]], samples = ncol(m), features = nrow(m), prevalence_filter = filt,
                                            engine = n_engine, paper = n_paper, equal = isTRUE(n_engine == n_paper), seconds = round(secs), error = err,
                                            method_failed = nzchar(failure), method_note = failure)
   }

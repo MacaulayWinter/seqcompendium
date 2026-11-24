@@ -23,7 +23,36 @@ fit_deseq2 <- function(ud, feats) {
              effect_unit = "log2 fold change, per unit of the denominator")
 }
 
+# LinDA (D09). It runs exactly as before on every table where it works. Only when it stops with an error,
+# the samples with fewer than R-LINDAFLOOR reads over the features it is given are left out for LinDA alone
+# and it is run once more (CLAUDE.md D67): on a very sparse table, a sample with only a handful of reads
+# makes its imputation step fail ("NA/NaN/Inf in 'y'", V-E7b ArcticFreshwaters). The result then carries an
+# attribute `linda_note`, which q4_unit() and q4_agreement() copy into every LinDA row's caveat. If nothing can
+# be left out, or the second run also stops, the error stays (the second one names what was left out).
 fit_linda <- function(ud, feats) {
+  first <- tryCatch(fit_linda_once(ud, feats), error = function(e) e)
+  if (!inherits(first, "error")) return(first)
+  floor_reads <- rule("R-LINDAFLOOR"); tot <- rowSums(ud$m[, feats, drop = FALSE]); low <- tot < floor_reads
+  if (!any(low)) stop(first)
+  ud2 <- ud_subset(ud, !low)
+  second <- tryCatch(fit_linda_once(ud2, feats), error = function(e) e)
+  if (inherits(second, "error")) stop(sprintf("LinDA stopped (%s); it was run again without the %d samples that have fewer than %g reads (R-LINDAFLOOR) and stopped again: %s",
+                                              conditionMessage(first), sum(low), floor_reads, conditionMessage(second)), call. = FALSE)
+  attr(second, "linda_note") <- sprintf("LinDA stopped on the full table (%s), so it was run again without the %d of %d samples that have fewer than %g reads over the tested features (rule R-LINDAFLOOR); those samples are not in this LinDA result",
+                                        conditionMessage(first), sum(low), length(low), floor_reads)
+  second
+}
+
+# The same unit data restricted to the samples where keep is TRUE.
+ud_subset <- function(ud, keep) {
+  ud$m <- ud$m[keep, , drop = FALSE]; ud$g <- droplevels(ud$g[keep]); ud$samples <- ud$samples[keep]
+  if (!is.null(ud$cov)) ud$cov <- ud$cov[keep, , drop = FALSE]
+  if (!is.null(ud$den)) ud$den <- ud$den[keep]
+  if (!is.null(ud$lib)) ud$lib <- ud$lib[keep]
+  ud
+}
+
+fit_linda_once <- function(ud, feats) {
   res <- suppressMessages(suppressWarnings(utils::capture.output(
     out <- MicrobiomeStat::linda(feature.dat = t(ud$m[, feats, drop = FALSE]),
                                  meta.dat = if (is.null(ud$cov)) data.frame(g = ud$g, row.names = ud$samples) else data.frame(ud$cov, g = ud$g, row.names = ud$samples),
@@ -186,6 +215,7 @@ q4_unit <- function(u, layer, default_id, des = NULL) {
   res <- list()
   for (f in feats) {
     r <- base[base$feature == f, , drop = FALSE]; rung <- 0L; cav <- character(0)
+    linda_note <- attr(base, "linda_note")
     if (whole || chk$failed[chk$feature == f] || !is.finite(r$p)) {
       r1 <- tryCatch(rung1(f), error = function(e) NULL); rung <- 1L
       cav <- c(cav, if (whole) sprintf("%d of %d features failed their residual checks, more than in clean simulated data (about %.1f expected; Fisher's exact p = %.3g < R-EXCESS), so the whole question moved to rung 1 (%s)", sum(chk$failed), length(feats), chance * length(feats), excess_p, rung1_name)
@@ -198,6 +228,7 @@ q4_unit <- function(u, layer, default_id, des = NULL) {
       res[[f]] <- data.frame(feature = f, effect = NA, se = NA, stat = NA, p = NA, effect_unit = NA, rung = rung, method_role = "fit failed",
                              caveat = paste(c(cav, "no method in the ladder could fit this feature; listed, not dropped"), collapse = "; "))
     } else {
+      if (rung == 0 && !is.null(linda_note)) cav <- c(cav, linda_note)
       res[[f]] <- cbind(r[, c("feature", "effect", "se", "stat", "p", "effect_unit")], rung = rung,
                         method_role = if (rung == 0) "default" else sprintf("fallback rung %d", rung), caveat = paste(cav, collapse = "; "))
     }
@@ -251,7 +282,7 @@ q4_agreement <- function(ud, feats, ids) {
     r <- tryCatch(FITS[[id]](ud, feats), error = function(e) conditionMessage(e))
     if (is.character(r)) { out[[id]] <- data.frame(feature = feats, method_id = id, effect = NA, p = NA, q = NA, call = NA, note = fit_failed_note(r)); next }
     ok <- is.finite(r$p); qq <- rep(NA_real_, nrow(r)); qq[ok] <- stats::p.adjust(r$p[ok], "BH")
-    out[[id]] <- data.frame(feature = r$feature, method_id = id, effect = r$effect, p = r$p, q = qq, call = !is.na(qq) & qq <= rule("R-FDR"), note = "")
+    out[[id]] <- data.frame(feature = r$feature, method_id = id, effect = r$effect, p = r$p, q = qq, call = !is.na(qq) & qq <= rule("R-FDR"), note = attr(r, "linda_note") %||% "")
   }
   do.call(rbind, out)
 }

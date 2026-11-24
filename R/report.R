@@ -147,6 +147,15 @@ write_report <- function(out, ctx) {
     else if (d$decision == "switched") sprintf("%s: on %d simulated data sets made from your %d control samples, the default's false discovery rate was %.2f (limit %.2f), so the engine switched to %s, the first method in the pre-written priority order that passed.", where, d$datasets, d$n_reference, d$default_fdr, d$limit, METHOD_NAMES[[d$final_id]])
     else sprintf("%s: on %d simulated data sets made from your %d control samples, no method's false discovery rate was within the limit (%.2f), so the default was kept and every result carries that caveat.", where, d$datasets, d$n_reference, d$limit)
   }, ""), collapse = " ")
+  # LinDA ran again without its lowest-depth samples (D67): said here and in every affected row's caveat.
+  linda_sentence <- local({
+    a4 <- res$q4$agreement
+    n_main <- if (is.null(r4)) 0 else sum(grepl("R-LINDAFLOOR", r4$caveat, fixed = TRUE))
+    n_agr <- if (is.null(a4) || !"note" %in% names(a4)) 0 else sum(grepl("R-LINDAFLOOR", a4$note, fixed = TRUE))
+    if (n_main + n_agr == 0) "" else sprintf("**LinDA stopped on the full table and was run again without its lowest-depth samples** (fewer than %g reads over the tested features, rule R-LINDAFLOOR); %d result row(s) of the default and %d row(s) of the agreement table say so in their caveat or note, and name how many samples were left out. Those samples are not in the LinDA result; the other methods still use them.",
+                                             rule("R-LINDAFLOOR"), n_main, n_agr)
+  })
+  sim_sentence <- paste(c(sim_sentence, linda_sentence)[nzchar(c(sim_sentence, linda_sentence))], collapse = " ")
   feature_block(r4, "## 10. Q4. Which features differ in abundance?",
     "Which features are more or less abundant in each level than in the reference, within each timepoint and block?",
     sprintf("%s. Features present in at least %.0f%% of one group's samples are tested (R-PREV); q-values are Benjamini-Hochberg within each comparison. %s",

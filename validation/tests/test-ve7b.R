@@ -107,3 +107,34 @@ test_that("V-E7(c) scorer: without the default table the old behaviour is unchan
   expect_identical(ve7b_engine_count("D04", ag, NULL), 1L)
   expect_identical(ve7b_count_source("D04", ag, NULL), "alternatives")
 })
+
+# ---- D66 and D68 (after the V-E7b ArcticFreshwaters rerun) --------------------------------------------------------------
+test_that("D68: a method the override made the primary is counted from the default table when the harness passes it", {
+  set.seed(1); n <- 100
+  tab <- function(id, k) data.frame(method_id = id, feature = paste0("f", 1:n), p = c(runif(k, 1e-12, 1e-6), runif(n - k)), note = "", stringsAsFactors = FALSE)
+  primary <- tab("D04", 30); ag <- rbind(tab("D06", 40), tab("D17", 55))
+  expect_true(is.na(ve7b_engine_count("D04", ag, NULL)))                     # as the rerun printed: "no rows"
+  expect_match(ve7b_engine_failure("D04", ag, NULL), "no rows")
+  expect_gte(ve7b_engine_count("D04", ag, NULL, primary), 30)                # found in the default table
+  expect_identical(ve7b_engine_count("D06", ag, NULL, primary), ve7b_engine_count("D06", ag, NULL))   # other methods unchanged
+  bad <- primary; bad$p <- NA_real_; bad$note <- "the method failed to fit: boom"
+  expect_true(is.na(ve7b_engine_count("D04", ag, NULL, bad)))                # a failed primary is still NA, never 0
+})
+
+test_that("D66: the optional all-samples prevalence filter changes the feature set as planned and is off by default", {
+  skip_if_not_installed("data.table")
+  # 100 samples in the table, the first 60 analysed. f1: in 30 analysed samples (kept either way). f2: in 7 analysed samples only
+  # (11.7% of the analysed, 7% of all: kept by the analysed-samples filter, dropped by the all-samples one). f3: in 20 of the other 40
+  # samples only (20% of all, absent from the analysed: kept by the all-samples filter as an all-zero row). f4: nowhere.
+  samp <- paste0("s", 1:100); an <- samp[1:60]
+  m <- matrix(0, 4, 100, dimnames = list(paste0("f", 1:4), samp))
+  m["f1", 1:30] <- 3; m["f2", 1:7] <- 2; m["f3", 61:80] <- 4
+  f <- tempfile(fileext = ".tsv"); writeLines("# Constructed", f)
+  suppressWarnings(utils::write.table(cbind(`#OTU ID` = rownames(m), m), f, sep = "\t", quote = FALSE, row.names = FALSE, append = TRUE, col.names = TRUE))
+  d <- read_asvs(f, an)
+  expect_identical(d, read_asvs(f, an, "analysed"))                      # off by default: identical
+  expect_identical(rownames(d), c("f1", "f2"))
+  a <- read_asvs(f, an, "all_samples")
+  expect_identical(rownames(a), c("f1", "f3")); expect_identical(colnames(a), an)
+  expect_error(ve7b_write_bundle(tempdir(), "ArcticFireSoils", VE7B_SETS$ArcticFireSoils, tempfile(), "all_samples"), "ArcticFreshwaters only")
+})

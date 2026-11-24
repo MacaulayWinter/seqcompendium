@@ -14,14 +14,15 @@
 #'   (`seqcompendium_stop`) naming every problem the user must fix.
 #' @export
 run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
-  cores <- check_cores(cores); par_log_reset()
+  cores <- check_cores(cores); par_log_reset(); .timing$path <- NULL
   if (dir.exists(out) && length(list.files(out, all.files = TRUE, no.. = TRUE))) {
     if (!overwrite) stop_engine(sprintf("The output folder %s already has files in it. Choose a new folder, or use overwrite = TRUE to replace an earlier compendium.", out))
     if (!file.exists(file.path(out, "provenance", "engine.yaml"))) stop_engine(sprintf("The output folder %s has files but was not written by seqcompendium, so it is not replaced.", out))
     unlink(out, recursive = TRUE)
   }
   dir.create(file.path(out, "00_input_check"), recursive = TRUE, showWarnings = FALSE)
-  b <- read_bundle(bundle)
+  timing_start(out)
+  b <- timed("read the bundle", read_bundle(bundle))
 
   if (is.null(b$guide)) {
     write_csv(guide_draft(b$md), file.path(out, "00_input_check", "column_guide_draft.csv"))
@@ -48,13 +49,13 @@ run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
   controls <- controls_table(lc$layers, des)
   write_csv(controls, file.path(out, "00_input_check", "controls.csv"))
 
-  profile <- shape_profile(lc$layers, des, cells)
+  profile <- timed("shape profile", shape_profile(lc$layers, des, cells))
   write_csv(profile, file.path(out, "01_profile", "shape_profile.csv"))
 
-  q1 <- q1_describe(lc$layers, des, cells)
+  q1 <- timed("Q1 describe", q1_describe(lc$layers, des, cells))
   write_csv(q1, file.path(out, "03_results", "Q1_describe", "results.csv"))
 
-  q2 <- q2_alpha(lc$layers, des, cells)
+  q2 <- timed("Q2 alpha", q2_alpha(lc$layers, des, cells))
   qdir <- file.path(out, "03_results", "Q2_alpha")
   dir.create(qdir, recursive = TRUE, showWarnings = FALSE)
   if (!is.null(q2$per_sample)) write_csv(q2$per_sample[order(q2$per_sample$layer, q2$per_sample$sample, q2$per_sample$q_order), ], file.path(qdir, "per_sample.csv"))
@@ -93,7 +94,7 @@ run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
   }
   q0 <- q0_contaminants(lc$layers, des)
   if (!is.null(q0)) write_csv(q0, file.path(out, "03_results", "Q0_contaminants", "results.csv"))
-  a2 <- q2_agreement(units, lc$layers, des)
+  a2 <- timed("Q2 agreement", q2_agreement(units, lc$layers, des))
   if (long) {
     q2l <- q2_long(lus, q2$per_sample, des)
     if (!is.null(q2l$results)) q2$results <- q2l$results
@@ -102,12 +103,12 @@ run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
   if (!is.null(q2$results)) q2$results <- agreement_labels(q2$results, a2, c("layer", "predictor", "contrast", "timepoint", "block", "q_order"))
   if (!is.null(q2$diagnostics)) write_csv(q2$diagnostics, file.path(qdir, "diagnostics.csv"))
   if (!is.null(q2$results)) write_csv(q2$results, file.path(qdir, "results.csv"))
-  q3 <- q3_composition(units, lc$layers, des)
+  q3 <- timed("Q3 composition (PERMANOVA, mvabund, Bray-Curtis, SIMPER)", q3_composition(units, lc$layers, des))
   if (!is.null(q3$results)) q3$results <- agreement_labels(q3$results, q3$agreement[q3$agreement$role == "agreement", ],
                                                            c("layer", "predictor", "contrast", "timepoint", "block"), directional = FALSE)
   # The override rule (design 5.3): checks each Q4 default on simulated data
   # from the reference samples, and switches only if it fails (C13).
-  ov <- if (!long) run_override(units, lc$layers, choices, considered, des, bundle, cores) else long_override_note(units, lc$layers, choices, des, bundle, considered)
+  ov <- timed("override check", if (!long) run_override(units, lc$layers, choices, considered, des, bundle, cores) else long_override_note(units, lc$layers, choices, des, bundle, considered))
   w0 <- function(x, ...) if (!is.null(x)) write_csv(x, file.path(out, ...))
   w0(ov$decisions, "02_method_choice", "override.csv"); w0(ov$calibration, "02_method_choice", "simulation", "calibration.csv")
   w0(ov$per_rep, "02_method_choice", "simulation", "per_dataset.csv")
@@ -131,11 +132,11 @@ run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
       z <- sign(r$effect) * stats::qnorm(pmax(r$p, 1e-300) / 2, lower.tail = FALSE)
       list(unit = u, stat = stats::setNames(z, r$feature)[is.finite(z)], ud = unit_data(u, lc$layers[[u$layer]], des), feats = r$feature)
     }))
-  } else q4 <- q4_abundance(units, lc$layers, choices, ov$decisions, des)
+  } else q4 <- timed("Q4 differential abundance (primary, agreement methods, LEfSe)", q4_abundance(units, lc$layers, choices, ov$decisions, des))
   if (!is.null(q4$results)) q4$results <- agreement_labels(q4$results, q4$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
-  q5 <- q5_presence(units, lc$layers, des)
+  q5 <- timed("Q5 presence", q5_presence(units, lc$layers, des))
   if (!is.null(q5$results)) q5$results <- agreement_labels(q5$results, q5$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "feature"))
-  q7 <- q7_sets(q4$for_q7, lc$layers)
+  q7 <- timed("Q7 sets", q7_sets(q4$for_q7, lc$layers))
   if (!is.null(q7$results)) q7$results <- agreement_labels(q7$results, q7$agreement, c("layer", "predictor", "contrast", "timepoint", "block", "set_column", "feature"))
   # The simulation's minimum detectable effect onto each Q4 result (D29c).
   if (!is.null(q4$results) && !is.null(ov$decisions)) {
@@ -146,15 +147,15 @@ run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
   }
   # Leave-one-out on every lead (design section 6; D29a).
   if (long) {
-    q2$results <- loo_long(q2$results, lus, lc$layers, des, q2$per_sample, "q2")
-    q4$results <- loo_long(q4$results, lus, lc$layers, des, q2$per_sample, "q4")
+    q2$results <- timed("leave-one-out Q2", loo_long(q2$results, lus, lc$layers, des, q2$per_sample, "q2"))
+    q4$results <- timed("leave-one-out Q4", loo_long(q4$results, lus, lc$layers, des, q2$per_sample, "q4"))
   } else {
-    q2$results <- loo_q2_snapshot(q2$results, units, q2$per_sample, des)
-    q4$results <- loo_q4_snapshot(q4$results, units, lc$layers, des)
+    q2$results <- timed("leave-one-out Q2", loo_q2_snapshot(q2$results, units, q2$per_sample, des))
+    q4$results <- timed("leave-one-out Q4 (one refit of the primary method per left-out sample)", loo_q4_snapshot(q4$results, units, lc$layers, des))
   }
-  q3$results <- loo_q3(q3$results, units, lc$layers, des)
-  q5$results <- loo_q5(q5$results, units, lc$layers, des)
-  q7$results <- loo_q7(q7$results, units, lc$layers, des, q4, long)
+  q3$results <- timed("leave-one-out Q3 (distance and PERMANOVA per left-out sample)", loo_q3(q3$results, units, lc$layers, des))
+  q5$results <- timed("leave-one-out Q5", loo_q5(q5$results, units, lc$layers, des))
+  q7$results <- timed("leave-one-out Q7", loo_q7(q7$results, units, lc$layers, des, q4, long))
   if (!is.null(q2$results)) write_csv(q2$results, file.path(qdir, "results.csv"))
   w <- function(x, ...) if (!is.null(x)) write_csv(x, file.path(out, ...))
   w(q3$results, "03_results", "Q3_composition", "results.csv"); w(q3$ordination, "03_results", "Q3_composition", "ordination.csv")
@@ -176,14 +177,14 @@ run_compendium <- function(bundle, out, overwrite = FALSE, cores = 1L) {
     w(q6$composition, "03_results", "Q6_change", "composition.csv"); w(a6a, "04_agreement", "Q6_alpha.csv"); w(a6f, "04_agreement", "Q6_features.csv")
   }
   res <- list(q0 = q0, q2 = q2, q3 = q3, q4 = q4, q5 = q5, q7 = q7, q6 = q6, override = ov, long = long)
-  leads <- build_leads(res, lc$layers, des)
+  leads <- timed("build leads", build_leads(res, lc$layers, des))
   write_csv(leads, file.path(out, "05_leads", "leads.csv"))
 
-  figures <- draw_figures(out)
+  figures <- timed("figures", draw_figures(out))
   write_provenance(out, b, cores)
   write_readme(out)
-  write_report(out, list(des = des, leads = leads, q2 = q2, q1 = q1, res = res, choices = choices, considered = considered, profile = profile, controls = controls, check = check,
-                         info = gc$info, figures = figures, bundle_path = normalizePath(bundle)))
+  timed("report", write_report(out, list(des = des, leads = leads, q2 = q2, q1 = q1, res = res, choices = choices, considered = considered, profile = profile, controls = controls, check = check,
+                         info = gc$info, figures = figures, bundle_path = normalizePath(bundle))))
   invisible(leads)
 }
 
