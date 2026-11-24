@@ -3,7 +3,7 @@
 # approved on 2026-10-29. Changing one is a new engine version, logged in
 # CLAUDE.md. These rules decide whether a METHOD suits the data; they never
 # decide what a metadata column is (that comes only from the column guide).
-rules_version: "2026-11-23.1"
+rules_version: "2026-11-24.1"
 rules:
   R-PREV:   {value: 0.10, reason: "Feature kept for per-feature tests if present in at least this share of samples in at least one group", source: "rule of thumb, unverified"}
   R-MINGRP: {value: 3,    reason: "Smallest group size for any test; below it, description and effect sizes only", source: "rule of thumb, unverified"}
@@ -34,3 +34,9 @@ rules:
   R-DIVNETMAX: {value: 2000, reason: "Most features for DivNet (Q2 agreement set, A04): its feature x feature matrices need about 8 x features^2 bytes each, so a 10,906-feature 16S table ran out of 6 GB; above this DivNet is not run and the result says so", source: "rule of thumb, unverified"}
   # Added after the V-E7b ArcticFreshwaters rerun (CLAUDE.md D67, user decision 2026-11-23; the floor was fixed from a toy sweep on simulated tables, never from the real result).
   R-LINDAFLOOR: {value: 50, reason: "LinDA is retried once without the samples that have fewer than this many reads over the tested features, but only after LinDA itself has stopped with an error; every LinDA result then says so", source: "engine convention; chosen by a toy sweep (validation/results/v0.1.0/ve7b_fixes/)"}
+  # Added with the prevalence screen (CLAUDE.md D70, user decision 2026-11-24). Written down before any real table was screened.
+  R-SCREENCUTS: {value: [0.05, 0.10, 0.20], reason: "Candidate prevalence cuts the screen reports kept features for", source: "engine convention (design note, criterion 3)"}
+  R-SCREENSENS: {value: 2, reason: "The choice of sample set matters when one counting basis keeps at least this many times as many features as the other (Freshwaters was 3.1)", source: "engine convention (design note, criterion 4)"}
+  R-SCREENAPPLYCUT: {value: 0.10, reason: "The cut the screen applies by default, in the narrow case only; the same value as R-PREV", source: "engine convention (design note, criterion 6)"}
+  R-SCREENSHARE: {value: 0.60, reason: "The screen applies a filter by default only if the analysed samples are at most this share of the layer's study samples; a two-group design analyses all of them, so it cannot fire", source: "engine convention (design note, criterion 6)"}
+  R-SCREENMINKEEP: {value: 2, reason: "The screen never applies a filter that would leave fewer than this many features to test (a model needs at least two)", source: "engine convention (safeguard added when writing the code; the design note lists it as a safeguard of criterion 6)"}

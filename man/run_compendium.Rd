@@ -4,7 +4,7 @@
 \alias{run_compendium}
 \title{Run the compendium engine on a bundle}
 \usage{
-run_compendium(bundle, out, overwrite = FALSE, cores = 1L)
+run_compendium(bundle, out, overwrite = FALSE, cores = 1L, screen = "default")
 }
 \arguments{
 \item{bundle}{the bundle folder (design §2).}
@@ -18,6 +18,10 @@ engine wrote before.}
 \item{cores}{how many cores the override check's simulated data sets may use (default 1, one after another).
 More cores change only the time, never a number: the engine sizes the workers from the memory a simulated data set needs and says what it chose in
 `provenance/run_settings.yaml`. Forked workers need Linux or macOS (including Docker and WSL2).}
+
+\item{screen}{the prevalence screen (D70): `"default"` reports how the choice of samples changes the features tested, and in one narrow
+case (most study samples are not in the comparison and the pooled prevalence differs by a factor of two or more) leaves features
+out of the Q4 tests, always listed and named in a caveat; `"report"` never leaves anything out; `"off"` runs no screen and writes none of its files.}
 }
 \value{
 the leads table, invisibly. Stops with a classed condition
