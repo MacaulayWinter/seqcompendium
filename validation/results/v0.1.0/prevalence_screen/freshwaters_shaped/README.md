@@ -20,8 +20,19 @@ Run 2026-11-25 with merged main 19acb72 (rules 2026-11-24.1), Mac container, 8 G
 - `screen = "default"`: the narrow default-apply fires and would leave **752** of 1,069 features out of this comparison's Q4 tests (`left_out_summary.csv`: they are present in 10 to 26% of the analysed samples and 4 to 10% of all study samples).
 - "unused vs Lake" (81% of study samples analysed, ratio 1.49 at 10%): not flagged, nothing applied; it only names a 20% cut as an option.
 
-## Why 317 and not the paper-style 346, said plainly
-The paper's filtered table has about 344 features; the 10% counted over all 2,468 samples of the table gives 346. The screen reports 317, for two reasons checked on the table (host count, counts only): **33 of those 346 features are not in the bundle at all**, because the harness's analysed-samples filter removed them before the engine saw the table; and the screen counts its share over the 2,440 samples with data (not 2,468), which makes 317 of the bundle's features pass (313 of them are among the 346). **The screen can only take features away from what is in the bundle; it can never add back what an upstream filter removed.** So the Freshwaters comparison with the paper stays the harness filter's job (D66); what the screen does here is show the user that the sample set changes the tested family by a factor of more than three.
+## Why 317, when the harness's all-samples filter keeps 346 and the paper lists 344
+All figures are counts computed on the table itself (host R, 10% = "present in at least 10% of the samples named"); the first three rows are checked, the last is not explained.
+
+| Number | Features counted from | Share counted over |
+|---|---|---|
+| **346** (harness filter, D66) | all 178,927 features of the table | all 2,468 samples of the table (the same 346 over the 2,466 samples that have a Location, and with "more than 10%" instead of "at least") |
+| **1,069** (the bundle's input, filter off) | all features of the table | the 936 analysed samples |
+| **317** (the screen's basis S) | only the 1,069 features that are in the bundle | the 2,440 samples with data over those 1,069 features (28 samples have no reads in any of them and are left out of the layer, as the engine does) |
+| **344** (paper's Source Data, "ASVs: 344") | **not established** | none of the counts above, or the variants tried, gives 344 |
+
+How 317 follows from 346: **313** of the 346 are among the bundle's 1,069 features. The other **33** are not in the bundle: each is present in at most 9.94% of the 936 analysed samples (so the harness's analysed-samples filter removed it before the engine saw the table) although it is present in at least 10.17% of all 2,468 samples. Of the bundle's features, **4** more pass at 10% only because the screen counts over 2,440 samples instead of 2,468 (313 + 4 = 317; none is lost by that change). **The screen can only take features away from what is in the bundle; it can never add back what an upstream filter removed**, so the comparison with the paper stays the harness filter's job (D66). What the screen does here is show the user that the choice of sample set changes the tested family by a factor of more than three.
+
+**346 against 344 is not explained by these files.** The Source Data figure is a per-dataset line in the sheet of the paper's null analysis (Figure 4B), which may not be the table or filter of its main counts; nothing here decides that.
 
 ## Limits
 One data set, an artificial level, one run. The near-empty samples reported (520, 21% under 50 reads) are mostly the non-analysed low-depth samples put into this bundle. Whether leaving the 752 features out would change any result of a real analysis was not looked at.
