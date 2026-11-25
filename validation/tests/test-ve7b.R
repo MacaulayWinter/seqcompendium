@@ -41,11 +41,13 @@ test_that("V-E7b: a method that failed inside the engine is reported as failed (
 
 test_that("V-E7b: the engine's tables, notes and report are kept before the compendium is deleted", {
   o <- tempfile("out"); k <- tempfile("keep")
-  for (f in c("04_agreement/Q4.csv", "04_agreement/Q4_describe_only.csv", "report/compendium_report.md", "05_leads/leads.csv")) {
+  for (f in c("04_agreement/Q4.csv", "04_agreement/Q4_describe_only.csv", "report/compendium_report.md", "05_leads/leads.csv",
+              "02_method_choice/override.csv", "02_method_choice/simulation/calibration.csv")) {
     dir.create(dirname(file.path(o, f)), recursive = TRUE, showWarnings = FALSE); writeLines(f, file.path(o, f))
   }
   kept <- ve7b_keep_engine_files(o, k)
-  expect_setequal(kept, c("04_agreement__Q4.csv", "04_agreement__Q4_describe_only.csv", "report__compendium_report.md"))
+  expect_setequal(kept, c("04_agreement__Q4.csv", "04_agreement__Q4_describe_only.csv", "report__compendium_report.md",
+                          "02_method_choice__override.csv", "02_method_choice__simulation__calibration.csv"))
   expect_identical(readLines(file.path(k, "04_agreement__Q4_describe_only.csv")), "04_agreement/Q4_describe_only.csv")
   unlink(o, recursive = TRUE)                                          # the compendium goes; the copies stay
   expect_true(all(file.exists(file.path(k, kept))))

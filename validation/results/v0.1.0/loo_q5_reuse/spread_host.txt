@@ -1,0 +1,11 @@
+        layer predictor           contrast timepoint block
+1  toy_counts     group treated vs control        T0  none
+28 toy_counts     group treated vs control        T1  none
+                                                                                          adjusted_for
+1  adjusted for nothing; not adjusted: 12 samples for 3 parameters, fewer than 5 per parameter (R-SPP)
+28 adjusted for nothing; not adjusted: 12 samples for 3 parameters, fewer than 5 per parameter (R-SPP)
+repeat 1: leads 19, main 2.73 s, branch 0.35 s, identical TRUE, same verdicts as the engine run TRUE
+repeat 2: leads 19, main 0.37 s, branch 0.29 s, identical TRUE, same verdicts as the engine run TRUE
+repeat 3: leads 19, main 0.37 s, branch 0.29 s, identical TRUE, same verdicts as the engine run TRUE
+repeat 4: leads 19, main 0.37 s, branch 0.31 s, identical TRUE, same verdicts as the engine run TRUE
+repeat 5: leads 19, main 0.36 s, branch 0.31 s, identical TRUE, same verdicts as the engine run TRUE

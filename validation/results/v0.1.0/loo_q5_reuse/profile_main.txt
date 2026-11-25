@@ -1,0 +1,28 @@
+936 samples, 346 features: 400 refits timed
+matrix rebuild (unit_data): 12.8 s, 31.9 ms per refit, 95%
+model fit and summary: 0.7 s, 1.7 ms per refit, 5%
+               total.time total.pct
+"one"               11.94    100.00
+"unit_data"         11.40     95.48
+"wide"              11.10     92.96
+"sort"               1.52     12.73
+"unique"             3.08     25.80
+"%in%"               2.66     22.28
+"[.data.frame"       4.08     34.17
+"stats::glm"         0.14      1.17
+"glm.fit"            0.12      1.01
+"summary"            0.14      1.17
+200 samples, 100 features: 400 refits timed
+matrix rebuild (unit_data): 0.8 s, 1.9 ms per refit, 70%
+model fit and summary: 0.3 s, 0.8 ms per refit, 30%
+               total.time total.pct
+"one"                1.02    100.00
+"unit_data"          0.58     56.86
+"wide"               0.54     52.94
+"sort"               0.12     11.76
+"unique"             0.24     23.53
+"%in%"               0.16     15.69
+"[.data.frame"       0.14     13.73
+"stats::glm"         0.14     13.73
+"glm.fit"            0.06      5.88
+"summary"            0.14     13.73
