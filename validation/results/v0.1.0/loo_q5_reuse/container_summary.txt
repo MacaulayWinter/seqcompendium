@@ -1,0 +1,20 @@
+== new test file alone, first version (it called internal functions unqualified)
+loo-q5: 1
+
+══ Failed ══════════════════════════════════════════════════════════════════════
+── 1. Error ('test-loo-q5.R:44:3'): leave-one-out Q5 gives the reference loop's 
+Error in `q5_presence(t$units, t$layers)`: could not find function "q5_presence"
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+No one gets it right on their first try
+TOTAL tests 1 failed 0 errors 1 skipped 0 
+== full package suite
+TOTAL tests 98 failed 0 errors 0 skipped 0 
+== validation tests
+TOTAL tests 31 failed 0 errors 0 
+== R CMD check
+* checking dependencies in R code ... NOTE
+* checking R code for possible problems ... NOTE
+Status: 3 NOTEs
+2026-11-25 15:42:47 START
+2026-11-25 17:15:46 END exit=0 oom=false

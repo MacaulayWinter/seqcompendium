@@ -116,26 +116,43 @@ loo_q4_snapshot <- function(r, units, layers, des) {
   r
 }
 
+# Q5: logistic regression (Firth for G06) refitted without each sample. The
+# comparison's data are the same for all of its leads, so they are built once
+# per left-out sample and every lead is refitted on them (CLAUDE.md D71).
 loo_q5 <- function(r, units, layers, des) {
   if (is.null(r) || !nrow(r)) return(r)
   r$loo_stable <- "not needed (not a lead)"
   if (is.null(r) || !any(r$status == "lead")) return(r)
   worst <- family_worst(r, c("layer", "predictor", "contrast", "timepoint", "block"))
-  for (i in which(r$status == "lead")) {
-    x <- r[i, ]; u <- find_unit(units, x); if (is.null(u)) next
-    rows <- do.call(rbind, lapply(c(u$ref_samples, u$level_samples), function(s) {
-      ud <- unit_data(drop_sample(u, s), layers[[u$layer]], des); y <- as.integer(ud$m[, x$feature] > 0)
-      dat <- if (is.null(ud$cov)) data.frame(y = y, g = ud$g) else data.frame(y = y, ud$cov, g = ud$g)
-      fml <- stats::as.formula(paste("y ~", cov_terms(ud$cov), "g")); k <- paste0("g", u$level)
-      if (length(unique(y)) < 2) return(data.frame(sample = s, effect = NA, p = NA))
-      if (x$method_id == "G06") { j <- which(colnames(stats::model.matrix(fml, dat)) == k); f <- logistf::logistf(fml, data = dat, plconf = j)
-        return(data.frame(sample = s, effect = unname(f$coefficients[j]), p = unname(f$prob[j]))) }
-      co <- summary(suppressWarnings(stats::glm(fml, data = dat, family = stats::binomial())))$coefficients
-      data.frame(sample = s, effect = co[k, 1], p = co[k, 4])
-    }))
-    r$loo_stable[i] <- loo_verdict(x$effect, x$p, worst[i], rows)
+  key <- paste(r$layer, r$predictor, r$contrast, r$timepoint, r$block, sep = "\r")
+  for (k in unique(key[r$status == "lead"])) {
+    idx <- which(key == k & r$status == "lead"); u <- find_unit(units, r[idx[1], ]); if (is.null(u)) next
+    samples <- c(u$ref_samples, u$level_samples)
+    effect <- p <- matrix(NA_real_, length(samples), length(idx))
+    for (a in seq_along(samples)) {
+      ud <- unit_data(drop_sample(u, samples[a]), layers[[u$layer]], des)
+      for (b in seq_along(idx)) {
+        v <- loo_q5_refit(ud, r$feature[idx[b]], r$method_id[idx[b]], u$level)
+        effect[a, b] <- v[1]; p[a, b] <- v[2]
+      }
+    }
+    for (b in seq_along(idx)) { i <- idx[b]
+      r$loo_stable[i] <- loo_verdict(r$effect[i], r$p[i], worst[i], data.frame(sample = samples, effect = effect[, b], p = p[, b])) }
   }
   r
+}
+
+# One lead's refit on one left-out sample's data: c(effect, p), NA where the
+# feature's presence no longer varies.
+loo_q5_refit <- function(ud, feature, method_id, level) {
+  y <- as.integer(ud$m[, feature] > 0)
+  dat <- if (is.null(ud$cov)) data.frame(y = y, g = ud$g) else data.frame(y = y, ud$cov, g = ud$g)
+  fml <- stats::as.formula(paste("y ~", cov_terms(ud$cov), "g")); k <- paste0("g", level)
+  if (length(unique(y)) < 2) return(c(NA_real_, NA_real_))
+  if (method_id == "G06") { j <- which(colnames(stats::model.matrix(fml, dat)) == k); f <- logistf::logistf(fml, data = dat, plconf = j)
+    return(unname(c(f$coefficients[j], f$prob[j]))) }
+  co <- summary(suppressWarnings(stats::glm(fml, data = dat, family = stats::binomial())))$coefficients
+  unname(c(co[k, 1], co[k, 4]))
 }
 
 # Q7 (snapshot): Q4's final method refitted without each sample, the same

@@ -1,0 +1,12 @@
+== identity: identical() on the whole results table
+n=30 p=20 covariates=FALSE: leads 33 (Firth 10), verdicts yes 7 / no 26, adjusted 'not adjusted', identical TRUE
+n=45 p=25 covariates=TRUE: leads 40 (Firth 4), verdicts yes 10 / no 30, adjusted 'adjusted for run, age', identical TRUE
+n=90 p=40 covariates=FALSE: leads 66 (Firth 2), verdicts yes 35 / no 31, adjusted 'not adjusted', identical TRUE
+n=90 p=40 covariates=TRUE: leads 66 (Firth 3), verdicts yes 39 / no 27, adjusted 'adjusted for run, age', identical TRUE
+== speed-up, one core, two groups
+n=100 p=100, 20 logistic leads: main 4.0 s, branch 1.6 s, 2.5 times faster, identical TRUE
+n=300 p=346, 20 logistic leads: main 101.9 s, branch 10.5 s, 9.7 times faster, identical TRUE
+n=936 p=346, 20 logistic leads: main 884.0 s, branch 65.2 s, 13.5 times faster, identical TRUE
+== one refit at 935 samples, 346 features
+data build 32.9 ms, logistic refit 1.4 ms, Firth refit 4.9 ms
+END

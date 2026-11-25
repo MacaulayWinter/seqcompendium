@@ -94,7 +94,8 @@ ve7b_engine_failure <- function(id, ag, ds, df = NULL) {
 # The engine's own tables, notes and report are copied out of the compendium
 # before it is deleted, so a difference can be traced without a rerun.
 VE7B_KEEP <- c("04_agreement/Q4.csv", "04_agreement/Q4_describe_only.csv", "03_results/Q4_differential/results.csv",
-               "00_input_check/bundle_check.csv", "report/compendium_report.md", "provenance/engine.yaml", "provenance/step_timings.tsv")
+               "00_input_check/bundle_check.csv", "report/compendium_report.md", "provenance/engine.yaml", "provenance/step_timings.tsv",
+               "02_method_choice/override.csv", "02_method_choice/simulation/calibration.csv")
 ve7b_keep_engine_files <- function(out, keep_dir) {
   unlink(keep_dir, recursive = TRUE); dir.create(keep_dir, recursive = TRUE)
   have <- VE7B_KEEP[file.exists(file.path(out, VE7B_KEEP))]

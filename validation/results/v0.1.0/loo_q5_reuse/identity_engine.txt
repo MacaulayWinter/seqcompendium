@@ -1,0 +1,66 @@
+main   RUN main: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN main: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL main: 34 csv files
+main   RUN no_controls: 33 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN no_controls: 33 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL no_controls: 33 csv files
+main   RUN copy_null: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN copy_null: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL copy_null: 29 csv files
+main   RUN planted: 29 csv files; Q5 leads 38 (yes 31, no 7, not run 0); leave-one-out Q5 1.10 s
+branch RUN planted: 29 csv files; Q5 leads 38 (yes 31, no 7, not run 0); leave-one-out Q5 0.70 s
+IDENTICAL planted: 29 csv files
+main   RUN planted_da: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN planted_da: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL planted_da: 29 csv files
+main   RUN spread: 29 csv files; Q5 leads 19 (yes 4, no 15, not run 0); leave-one-out Q5 0.60 s
+branch RUN spread: 29 csv files; Q5 leads 19 (yes 4, no 15, not run 0); leave-one-out Q5 5.20 s
+IDENTICAL spread: 29 csv files
+main   RUN zeroinfl_few: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN zeroinfl_few: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL zeroinfl_few: 29 csv files
+main   RUN zeroinfl_many: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN zeroinfl_many: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL zeroinfl_many: 29 csv files
+main   RUN presence: 29 csv files; Q5 leads 2 (yes 2, no 0, not run 0); leave-one-out Q5 0.10 s
+branch RUN presence: 29 csv files; Q5 leads 2 (yes 2, no 0, not run 0); leave-one-out Q5 0.10 s
+IDENTICAL presence: 29 csv files
+main   RUN no_denominator: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN no_denominator: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL no_denominator: 29 csv files
+main   RUN proportions: 10 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN proportions: 10 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL proportions: 10 csv files
+main   RUN calib: 33 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN calib: 33 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL calib: 33 csv files
+main   RUN calib_mocks6: 33 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN calib_mocks6: 33 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL calib_mocks6: 33 csv files
+main   RUN long_planted: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN long_planted: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL long_planted: 34 csv files
+main   RUN long_div: 34 csv files; Q5 leads 9 (yes 2, no 7, not run 0); leave-one-out Q5 0.30 s
+branch RUN long_div: 34 csv files; Q5 leads 9 (yes 2, no 7, not run 0); leave-one-out Q5 0.20 s
+IDENTICAL long_div: 34 csv files
+main   RUN few_subjects: 14 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN few_subjects: 14 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL few_subjects: 14 csv files
+main   RUN long40: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN long40: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL long40: 34 csv files
+main   RUN long4tp: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN long4tp: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL long4tp: 34 csv files
+main   RUN long_zeroinfl: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN long_zeroinfl: 34 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL long_zeroinfl: 34 csv files
+main   RUN adjust: 31 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN adjust: 31 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL adjust: 31 csv files
+main   RUN confounded_batch: 31 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN confounded_batch: 31 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL confounded_batch: 31 csv files
+main   RUN fragile: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+branch RUN fragile: 29 csv files; Q5 leads 0 (yes 0, no 0, not run 0); leave-one-out Q5 0.00 s
+IDENTICAL fragile: 29 csv files
