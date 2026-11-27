@@ -1,0 +1,15 @@
+cores_asked: 4
+screen: default
+workers_used:
+  calibration loop:
+    cores_asked: 4
+    workers_used: 1
+    reason: 'you asked for 4; using 1: memory allows it (this machine has 5 GB of
+      memory free and each worker needs about 3.4 GB)'
+  minimum-detectable-effect loop:
+    cores_asked: 4
+    workers_used: 1
+    reason: 'you asked for 4; using 1: memory allows it (this machine has 5 GB of
+      memory free and each worker needs about 3.4 GB)'
+note: the override check's simulated data sets run side by side; the numbers do not
+  depend on this

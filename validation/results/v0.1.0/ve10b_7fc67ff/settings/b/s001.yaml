@@ -1,0 +1,13 @@
+cores_asked: 2
+screen: default
+workers_used:
+  calibration loop:
+    cores_asked: 2
+    workers_used: 2
+    reason: you asked for 2; using 2 (as asked)
+  minimum-detectable-effect loop:
+    cores_asked: 2
+    workers_used: 2
+    reason: you asked for 2; using 2 (as asked)
+note: the override check's simulated data sets run side by side; the numbers do not
+  depend on this

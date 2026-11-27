@@ -1,0 +1,24 @@
+=== 2026-11-26 14:28:09 runner started; engine 7fc67ff; image sha256:b66fd37c371f20a84acda9ac9b1686f72a982352481a068d6d2c3b9b30c8eb96
+=== 2026-11-26 21:39:16 start ve10br_a (memory 8g, cpus 4, disk 34 GB) : ve10brun a 1 -
+=== 2026-11-27 01:17:25 end ve10br_a exit 0 oom false
+=== 2026-11-27 01:17:25 start ve10br_b (memory 8g, cpus 4, disk 34 GB) : ve10brun b 2 -
+=== 2026-11-27 04:53:25 end ve10br_b exit 0 oom false
+=== 2026-11-27 04:53:25 start ve10br_c (memory 8g, cpus 4, disk 33 GB) : ve10brun c 4 -
+=== 2026-11-27 08:21:40 end ve10br_c exit 0 oom false
+=== 2026-11-27 08:21:40 start ve10br_d (memory 8g, cpus 4, disk 33 GB) : ve10brun d 4 7
+=== 2026-11-27 11:52:31 end ve10br_d exit 0 oom false
+=== 2026-11-27 11:52:31 start ve10br_e (memory 8g, cpus 4, disk 33 GB) : ve10brun e 4 -
+=== 2026-11-27 15:32:45 end ve10br_e exit 0 oom false
+=== 2026-11-27 15:32:45 start ve10br_cmp_ab (memory 2g, cpus 1, disk 32 GB) : ve10bcmp a b V-E10b-1
+=== 2026-11-27 15:32:50 end ve10br_cmp_ab exit 0 oom false
+=== 2026-11-27 15:32:51 start ve10br_cmp_ac (memory 2g, cpus 1, disk 32 GB) : ve10bcmp a c V-E10b-1
+=== 2026-11-27 15:32:55 end ve10br_cmp_ac exit 0 oom false
+=== 2026-11-27 15:32:55 start ve10br_cmp_ad (memory 2g, cpus 1, disk 32 GB) : ve10bcmp a d V-E10b-2
+=== 2026-11-27 15:33:00 end ve10br_cmp_ad exit 0 oom false
+=== 2026-11-27 15:33:00 start ve10br_cmp_ce (memory 2g, cpus 1, disk 32 GB) : ve10bcmp c e V-E10b-3
+=== 2026-11-27 15:33:04 end ve10br_cmp_ce exit 0 oom false
+=== 2026-11-27 15:33:04 "V-E10b-1","main toy and the first 4 V-E1 bundles, runs a and b: every CSV byte-identical",1,"= 1",TRUE,5
+=== 2026-11-27 15:33:04 "V-E10b-1","main toy and the first 4 V-E1 bundles, runs a and c: every CSV byte-identical",1,"= 1",TRUE,5
+=== 2026-11-27 15:33:04 "V-E10b-2","main toy and the first 4 V-E1 bundles, runs a and d: every CSV byte-identical",1,"= 1",TRUE,5
+=== 2026-11-27 15:33:04 "V-E10b-3","main toy and the first 4 V-E1 bundles, runs c and e: every CSV byte-identical",1,"= 1",TRUE,5
+=== 2026-11-27 15:33:04 ALL DONE

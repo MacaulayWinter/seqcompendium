@@ -1,0 +1,5 @@
+cores_asked: 1
+screen: default
+workers_used: {}
+note: the override check's simulated data sets run side by side; the numbers do not
+  depend on this
