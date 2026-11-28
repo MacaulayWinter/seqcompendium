@@ -1,0 +1,8 @@
+=== 2026-11-26 14:28:09 runner started; engine 7fc67ff; image sha256:b66fd37c371f20a84acda9ac9b1686f72a982352481a068d6d2c3b9b30c8eb96
+=== 2026-11-26 14:28:12 start ve10r_c (memory 8g, cpus 1, disk 34 GB) : ve10run c
+=== 2026-11-26 18:03:08 end ve10r_c exit 0 oom false
+=== 2026-11-26 18:03:08 start ve10r_d (memory 8g, cpus 1, disk 34 GB) : ve10run d
+=== 2026-11-26 21:39:10 end ve10r_d exit 0 oom false
+=== 2026-11-26 21:39:10 start ve10r_cmp (memory 2g, cpus 1, disk 34 GB) : ve10cmp c d
+=== 2026-11-26 21:39:16 end ve10r_cmp exit 0 oom false
+=== 2026-11-26 21:39:16 V-E10 DONE: "V-E10","main toy and the first 4 V-E1 bundles run twice (runs c, d; fixed engine): every CSV byte-identical",1,"= 1",TRUE,5
